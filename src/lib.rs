@@ -11,7 +11,7 @@
 /// Contains Batch object to be used to prepare Nftables payloads.
 pub mod batch;
 
-/// Contains Expressions.
+/// Contains [expressions](crate::expr::Expression).
 /// Expressions are the building blocks of (most) statements.
 ///
 /// See <https://manpages.debian.org/testing/libnftables1/libnftables-json.5.en.html#EXPRESSIONS>.
