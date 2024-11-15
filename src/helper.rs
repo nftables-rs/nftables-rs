@@ -10,6 +10,9 @@ use crate::schema::Nftables;
 
 const NFT_EXECUTABLE: &str = "nft"; // search in PATH
 
+#[cfg(all(feature = "tokio", feature = "async-process"))]
+compile_error!("features `tokio` and `async-process` are mutually exclusive");
+
 #[derive(Error, Debug)]
 pub enum NftablesError {
     #[error("unable to execute {program}: {inner}")]
@@ -38,17 +41,26 @@ pub fn get_current_ruleset(
     serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }
 
+#[cfg(any(feature = "tokio", feature = "async-process"))]
+pub async fn get_current_ruleset_async(
+    program: Option<&str>,
+    args: Option<&[&str]>,
+) -> Result<Nftables<'static>, NftablesError> {
+    let output = get_current_ruleset_raw_async(program, args).await?;
+    serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
+}
+
 pub fn get_current_ruleset_raw(
     program: Option<&str>,
     args: Option<&[&str]>,
 ) -> Result<String, NftablesError> {
-    let mut nft_cmd = get_command(program);
+    let program = program.unwrap_or(NFT_EXECUTABLE);
+    let mut nft_cmd = Command::new(program);
     let default_args = ["list", "ruleset"];
     let args = match args {
         Some(args) => args,
         None => &default_args,
     };
-    let program = nft_cmd.get_program().to_str().unwrap().to_string();
     let process_result =
         nft_cmd
             .arg("-j")
@@ -56,16 +68,59 @@ pub fn get_current_ruleset_raw(
             .output()
             .map_err(|e| NftablesError::NftExecution {
                 inner: e,
-                program: program.clone(),
+                program: program.to_string(),
             })?;
 
-    let stdout = read_output(&nft_cmd, process_result.stdout)?;
+    let stdout = read_output(program, process_result.stdout)?;
 
     if !process_result.status.success() {
-        let stderr = read_output(&nft_cmd, process_result.stderr)?;
+        let stderr = read_output(program, process_result.stderr)?;
 
         return Err(NftablesError::NftFailed {
-            program,
+            program: program.to_string(),
+            hint: "getting the current ruleset".to_string(),
+            stdout,
+            stderr,
+        });
+    }
+    Ok(stdout)
+}
+
+#[cfg(any(feature = "tokio", feature = "async-process"))]
+pub async fn get_current_ruleset_raw_async(
+    program: Option<&str>,
+    args: Option<&[&str]>,
+) -> Result<String, NftablesError> {
+    #[cfg(feature = "async-process")]
+    use async_process::Command;
+    #[cfg(feature = "tokio")]
+    use tokio::process::Command;
+
+    let program = program.unwrap_or(NFT_EXECUTABLE);
+    let mut nft_cmd = Command::new(program);
+    let default_args = ["list", "ruleset"];
+    let args = match args {
+        Some(args) => args,
+        None => &default_args,
+    };
+    let process_result =
+        nft_cmd
+            .arg("-j")
+            .args(args)
+            .output()
+            .await
+            .map_err(|e| NftablesError::NftExecution {
+                inner: e,
+                program: program.to_string(),
+            })?;
+
+    let stdout = read_output(program, process_result.stdout)?;
+
+    if !process_result.status.success() {
+        let stderr = read_output(program, process_result.stderr)?;
+
+        return Err(NftablesError::NftFailed {
+            program: program.to_string(),
             hint: "getting the current ruleset".to_string(),
             stdout,
             stderr,
@@ -83,14 +138,24 @@ pub fn apply_ruleset(
     apply_ruleset_raw(&nftables, program, args)
 }
 
+#[cfg(any(feature = "tokio", feature = "async-process"))]
+pub async fn apply_ruleset_async(
+    nftables: &Nftables<'_>,
+    program: Option<&str>,
+    args: Option<&[&str]>,
+) -> Result<(), NftablesError> {
+    let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
+    apply_ruleset_raw_async(&nftables, program, args).await
+}
+
 pub fn apply_ruleset_raw(
     payload: &str,
     program: Option<&str>,
     args: Option<&[&str]>,
 ) -> Result<(), NftablesError> {
-    let mut nft_cmd = get_command(program);
+    let program = program.unwrap_or(NFT_EXECUTABLE);
+    let mut nft_cmd = Command::new(program);
     let default_args = ["-j", "-f", "-"];
-    let program = nft_cmd.get_program().to_str().unwrap().to_string();
     let mut process = nft_cmd
         .args(args.into_iter().flatten())
         .args(default_args)
@@ -98,7 +163,7 @@ pub fn apply_ruleset_raw(
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|e| NftablesError::NftExecution {
-            program: program.clone(),
+            program: program.to_string(),
             inner: e,
         })?;
 
@@ -106,7 +171,7 @@ pub fn apply_ruleset_raw(
     stdin
         .write_all(payload.as_bytes())
         .map_err(|e| NftablesError::NftExecution {
-            program: program.clone(),
+            program: program.to_string(),
             inner: e,
         })?;
     drop(stdin);
@@ -115,11 +180,11 @@ pub fn apply_ruleset_raw(
     match result {
         Ok(output) if output.status.success() => Ok(()),
         Ok(process_result) => {
-            let stdout = read_output(&nft_cmd, process_result.stdout)?;
-            let stderr = read_output(&nft_cmd, process_result.stderr)?;
+            let stdout = read_output(program, process_result.stdout)?;
+            let stderr = read_output(program, process_result.stderr)?;
 
             Err(NftablesError::NftFailed {
-                program,
+                program: program.to_string(),
                 hint: "applying ruleset".to_string(),
                 stdout,
                 stderr,
@@ -132,14 +197,72 @@ pub fn apply_ruleset_raw(
     }
 }
 
-fn get_command(program: Option<&str>) -> Command {
-    let nft_executable: &str = program.unwrap_or(NFT_EXECUTABLE);
-    Command::new(nft_executable)
+#[cfg(any(feature = "tokio", feature = "async-process"))]
+pub async fn apply_ruleset_raw_async(
+    payload: &str,
+    program: Option<&str>,
+    args: Option<&[&str]>,
+) -> Result<(), NftablesError> {
+    #[cfg(feature = "async-process")]
+    use async_process::Command;
+    #[cfg(feature = "async-process")]
+    use futures_lite::io::AsyncWriteExt;
+    #[cfg(feature = "tokio")]
+    use tokio::io::AsyncWriteExt;
+    #[cfg(feature = "tokio")]
+    use tokio::process::Command;
+
+    let program = program.unwrap_or(NFT_EXECUTABLE);
+    let mut nft_cmd = Command::new(program);
+    let default_args = ["-j", "-f", "-"];
+    let mut process = nft_cmd
+        .args(args.into_iter().flatten())
+        .args(default_args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| NftablesError::NftExecution {
+            program: program.to_string(),
+            inner: e,
+        })?;
+
+    let mut stdin = process.stdin.take().unwrap();
+    stdin
+        .write_all(payload.as_bytes())
+        .await
+        .map_err(|e| NftablesError::NftExecution {
+            program: program.to_string(),
+            inner: e,
+        })?;
+    drop(stdin);
+
+    #[cfg(feature = "tokio")]
+    let result = process.wait_with_output().await;
+    #[cfg(feature = "async-process")]
+    let result = process.output().await;
+    match result {
+        Ok(output) if output.status.success() => Ok(()),
+        Ok(process_result) => {
+            let stdout = read_output(program, process_result.stdout)?;
+            let stderr = read_output(program, process_result.stderr)?;
+
+            Err(NftablesError::NftFailed {
+                program: program.to_string(),
+                hint: "applying ruleset".to_string(),
+                stdout,
+                stderr,
+            })
+        }
+        Err(e) => Err(NftablesError::NftExecution {
+            program: program.to_string(),
+            inner: e,
+        }),
+    }
 }
 
-fn read_output(cmd: &Command, bytes: Vec<u8>) -> Result<String, NftablesError> {
+fn read_output(program: impl Into<String>, bytes: Vec<u8>) -> Result<String, NftablesError> {
     String::from_utf8(bytes).map_err(|e| NftablesError::NftOutputEncoding {
         inner: e,
-        program: cmd.get_program().to_str().unwrap().to_string(),
+        program: program.into(),
     })
 }
