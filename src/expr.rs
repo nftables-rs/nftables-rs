@@ -15,7 +15,7 @@ pub enum Expression {
     /// List expressions are constructed by plain arrays containing of an arbitrary number of expressions.
     List(Cow<'static, [Expression]>),
     BinaryOperation(Box<BinaryOperation>),
-    Range(Range),
+    Range(Box<Range>),
 
     Named(NamedExpression),
     Verdict(Verdict),
@@ -87,7 +87,7 @@ pub struct Prefix {
 /// Construct a range of values.
 /// The first array item denotes the lower boundary, the second one the upper boundary.
 pub struct Range {
-    pub range: Cow<'static, [Expression]>,
+    pub range: [Expression; 2],
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
