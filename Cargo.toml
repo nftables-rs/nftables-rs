@@ -18,12 +18,15 @@ exclude = [
 ]
 
 [dependencies]
+async-process = { version = "2.3.0", optional = true }
+futures-lite = { version = "2.5.0", optional = true }
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = { version = "1.0.135" }
 serde_path_to_error = "0.1"
 strum = "0.26.3"
 strum_macros = "0.26.4"
 thiserror = "2.0.9"
+tokio = { version = "1.38.1", optional = true, features = ["process", "io-util"] }
 
 [dev-dependencies]
 datatest-stable = "0.3.2"
@@ -32,3 +35,7 @@ serial_test = "3.2.0"
 [[test]]
 name = "deserialize"
 harness = false
+
+[features]
+tokio = ["dep:tokio"]
+async-process = ["dep:async-process", "dep:futures-lite"]
