@@ -140,9 +140,9 @@ pub enum FlushObject {
     /// A chain to flush (i.e., remove all rules from chain).
     Chain(Chain),
     /// A set to flush (i.e., remove all elements from set).
-    Set(Set),
+    Set(Box<Set>),
     /// A map to flush (i.e., remove all elements from map).
-    Map(Map),
+    Map(Box<Map>),
     /// A meter to flush.
     Meter(Meter),
     /// Flush the live ruleset (i.e., remove all elements from live ruleset).
@@ -774,7 +774,7 @@ pub enum LimitUnit {
 pub struct Meter {
     pub name: Cow<'static, str>,
     pub key: Expression,
-    pub stmt: Statement,
+    pub stmt: Box<Statement>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]

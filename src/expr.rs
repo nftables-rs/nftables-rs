@@ -14,7 +14,7 @@ pub enum Expression {
     Boolean(bool),
     /// List expressions are constructed by plain arrays containing of an arbitrary number of expressions.
     List(Cow<'static, [Expression]>),
-    BinaryOperation(BinaryOperation),
+    BinaryOperation(Box<BinaryOperation>),
     Range(Range),
 
     Named(NamedExpression),
@@ -327,23 +327,23 @@ pub enum FibFlag {
 pub enum BinaryOperation {
     #[serde(rename = "&")]
     /// Binary AND (`&`)
-    AND(Box<Expression>, Box<Expression>),
+    AND(Expression, Expression),
 
     #[serde(rename = "|")]
     /// Binary OR (`|`)
-    OR(Box<Expression>, Box<Expression>),
+    OR(Expression, Expression),
 
     #[serde(rename = "^")]
     /// Binary XOR (`^`)
-    XOR(Box<Expression>, Box<Expression>),
+    XOR(Expression, Expression),
 
     #[serde(rename = "<<")]
     /// Left shift (`<<`)
-    LSHIFT(Box<Expression>, Box<Expression>),
+    LSHIFT(Expression, Expression),
 
     #[serde(rename = ">>")]
     /// Right shift (`>>`)
-    RSHIFT(Box<Expression>, Box<Expression>),
+    RSHIFT(Expression, Expression),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
