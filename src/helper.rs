@@ -32,7 +32,7 @@ pub enum NftablesError {
 
 pub fn get_current_ruleset(
     program: Option<&str>,
-    args: Option<Vec<&str>>,
+    args: Option<&[&str]>,
 ) -> Result<Nftables, NftablesError> {
     let output = get_current_ruleset_raw(program, args)?;
     serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
@@ -40,12 +40,12 @@ pub fn get_current_ruleset(
 
 pub fn get_current_ruleset_raw(
     program: Option<&str>,
-    args: Option<Vec<&str>>,
+    args: Option<&[&str]>,
 ) -> Result<String, NftablesError> {
     let mut nft_cmd = get_command(program);
     let default_args = ["list", "ruleset"];
-    let args = match &args {
-        Some(args) => args.as_slice(),
+    let args = match args {
+        Some(args) => args,
         None => &default_args,
     };
     let program = nft_cmd.get_program().to_str().unwrap().to_string();
@@ -77,29 +77,23 @@ pub fn get_current_ruleset_raw(
 pub fn apply_ruleset(
     nftables: &Nftables,
     program: Option<&str>,
-    args: Option<Vec<&str>>,
+    args: Option<&[&str]>,
 ) -> Result<(), NftablesError> {
     let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
-    apply_ruleset_raw(nftables, program, args)
+    apply_ruleset_raw(&nftables, program, args)
 }
 
 pub fn apply_ruleset_raw(
-    payload: String,
+    payload: &str,
     program: Option<&str>,
-    args: Option<Vec<&str>>,
+    args: Option<&[&str]>,
 ) -> Result<(), NftablesError> {
     let mut nft_cmd = get_command(program);
     let default_args = ["-j", "-f", "-"];
-    let args: Vec<&str> = match args {
-        Some(mut args) => {
-            args.extend_from_slice(&default_args);
-            args
-        }
-        None => default_args.to_vec(),
-    };
     let program = nft_cmd.get_program().to_str().unwrap().to_string();
     let mut process = nft_cmd
-        .args(args)
+        .args(args.into_iter().flatten())
+        .args(default_args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()

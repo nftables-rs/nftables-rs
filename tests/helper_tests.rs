@@ -39,13 +39,13 @@ fn test_nft_args_list_map_set() {
     // nft should return two list object: metainfo and the set/map
     let applied = helper::get_current_ruleset(
         None,
-        Some(vec!["list", "map", "ip", "test-table-01", "test_map"]),
+        Some(&["list", "map", "ip", "test-table-01", "test_map"]),
     )
     .unwrap();
     assert_eq!(2, applied.objects.len());
     let applied = helper::get_current_ruleset(
         None,
-        Some(vec!["list", "set", "ip", "test-table-01", "test_set"]),
+        Some(&["list", "set", "ip", "test-table-01", "test_set"]),
     )
     .unwrap();
     assert_eq!(2, applied.objects.len());
