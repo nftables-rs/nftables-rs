@@ -1,4 +1,4 @@
-use std::vec;
+use std::{borrow::Cow, vec};
 
 use nftables::{
     batch::Batch,
@@ -70,7 +70,7 @@ fn test_remove_unknown_table() {
     let mut batch = Batch::new();
     batch.delete(schema::NfListObject::Table(schema::Table {
         family: types::NfFamily::IP6,
-        name: "i-do-not-exist".to_string(),
+        name: "i-do-not-exist".into(),
         ..Table::default()
     }));
     let ruleset = batch.to_nftables();
@@ -83,18 +83,18 @@ fn test_remove_unknown_table() {
 fn example_ruleset(with_undo: bool) -> schema::Nftables {
     let mut batch = Batch::new();
     // create table "test-table-01"
-    let table_name = "test-table-01".to_string();
+    let table_name = "test-table-01";
     batch.add(schema::NfListObject::Table(Table {
-        name: table_name.clone(),
+        name: table_name.into(),
         family: types::NfFamily::IP,
         ..Table::default()
     }));
     // create named set "test_set"
-    let set_name = "test_set".to_string();
-    batch.add(schema::NfListObject::Set(schema::Set {
+    let set_name = "test_set";
+    batch.add(schema::NfListObject::Set(Box::new(schema::Set {
         family: types::NfFamily::IP,
-        table: table_name.clone(),
-        name: set_name.clone(),
+        table: table_name.into(),
+        name: set_name.into(),
         handle: None,
         set_type: schema::SetTypeValue::Single(schema::SetType::Ipv4Addr),
         policy: None,
@@ -104,12 +104,12 @@ fn example_ruleset(with_undo: bool) -> schema::Nftables {
         gc_interval: None,
         size: None,
         comment: None,
-    }));
+    })));
     // create named map "test_map"
-    batch.add(schema::NfListObject::Map(schema::Map {
+    batch.add(schema::NfListObject::Map(Box::new(schema::Map {
         family: types::NfFamily::IP,
-        table: table_name.clone(),
-        name: "test_map".to_string(),
+        table: table_name.into(),
+        name: "test_map".into(),
         handle: None,
         map: schema::SetTypeValue::Single(schema::SetType::EtherAddr),
         set_type: schema::SetTypeValue::Single(schema::SetType::Ipv4Addr),
@@ -120,21 +120,21 @@ fn example_ruleset(with_undo: bool) -> schema::Nftables {
         gc_interval: None,
         size: None,
         comment: None,
-    }));
+    })));
     // add element to set
     batch.add(schema::NfListObject::Element(schema::Element {
         family: types::NfFamily::IP,
-        table: table_name,
-        name: set_name,
-        elem: vec![
-            expr::Expression::String("127.0.0.1".to_string()),
-            expr::Expression::String("127.0.0.2".to_string()),
-        ],
+        table: table_name.into(),
+        name: set_name.into(),
+        elem: Cow::Borrowed(&[
+            expr::Expression::String(Cow::Borrowed("127.0.0.1")),
+            expr::Expression::String(Cow::Borrowed("127.0.0.2")),
+        ]),
     }));
     if with_undo {
         batch.delete(schema::NfListObject::Table(schema::Table {
             family: types::NfFamily::IP,
-            name: "test-table-01".to_string(),
+            name: "test-table-01".into(),
             ..Table::default()
         }));
     }

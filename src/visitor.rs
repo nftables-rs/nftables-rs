@@ -1,10 +1,14 @@
 use serde::{de, Deserialize};
-use std::{collections::HashSet, fmt::Formatter, marker::PhantomData, str::FromStr};
+use std::{borrow::Cow, collections::HashSet, fmt::Formatter, marker::PhantomData, str::FromStr};
 
 use crate::stmt::LogFlag;
 
-/// Deserialize null, a string, or string sequence into an `Option<Vec<String>>`.
-pub fn single_string_to_option_vec<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
+type CowCowStrs = Cow<'static, [Cow<'static, str>]>;
+
+/// Deserialize null, a string, or string sequence into an `Option<Cow<'static, [Cow<'static, str>]>>`.
+pub fn single_string_to_option_vec<'de, D>(
+    deserializer: D,
+) -> Result<Option<CowCowStrs>, D::Error>
 where
     D: de::Deserializer<'de>,
 {
@@ -17,14 +21,16 @@ where
     }
 }
 
-/// Deserialize null, a string or string sequence into a `Vec<String>`.
-pub fn single_string_to_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+/// Deserialize null, a string or string sequence into a `Cow<'static, [Cow<'static, str>]>`.
+pub fn single_string_to_vec<'de, D>(
+    deserializer: D,
+) -> Result<CowCowStrs, D::Error>
 where
     D: de::Deserializer<'de>,
 {
-    struct StringOrVec(PhantomData<Vec<String>>);
+    struct StringOrVec(PhantomData<CowCowStrs>);
     impl<'de> de::Visitor<'de> for StringOrVec {
-        type Value = Vec<String>;
+        type Value = CowCowStrs;
 
         fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
             formatter.write_str("single string or list of strings")
@@ -34,14 +40,14 @@ where
         where
             E: de::Error,
         {
-            Ok(vec![])
+            Ok(Cow::Borrowed(&[][..]))
         }
 
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
-            Ok(vec![value.to_owned()])
+            Ok(Cow::Owned(vec![Cow::Owned(value.to_owned())]))
         }
 
         fn visit_seq<S>(self, visitor: S) -> Result<Self::Value, S::Error>

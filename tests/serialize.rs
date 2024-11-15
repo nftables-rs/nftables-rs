@@ -1,18 +1,19 @@
 use nftables::{expr::*, schema::*, stmt::*, types::*};
+use std::borrow::Cow;
 
 #[test]
 fn test_serialize() {
     let _a: Nftables = Nftables {
-        objects: vec![
+        objects: Cow::Borrowed(&[
             NfObject::CmdObject(NfCmd::Add(NfListObject::Table(Table {
                 family: NfFamily::INet,
-                name: "namib".to_string(),
+                name: Cow::Borrowed("namib"),
                 handle: None,
             }))),
             NfObject::CmdObject(NfCmd::Add(NfListObject::Chain(Chain {
                 family: NfFamily::INet,
-                table: "namib".to_string(),
-                name: "one_chain".to_string(),
+                table: Cow::Borrowed("namib"),
+                name: Cow::Borrowed("one_chain"),
                 newname: None,
                 handle: None,
                 _type: Some(NfChainType::Filter),
@@ -23,28 +24,28 @@ fn test_serialize() {
             }))),
             NfObject::CmdObject(NfCmd::Add(NfListObject::Rule(Rule {
                 family: NfFamily::INet,
-                table: "namib".to_string(),
-                chain: "one_chain".to_string(),
-                expr: vec![
+                table: Cow::Borrowed("namib"),
+                chain: Cow::Borrowed("one_chain"),
+                expr: Cow::Borrowed(&[
                     Statement::Match(Match {
-                        left: Expression::List(vec![
+                        left: Expression::List(Cow::Borrowed(&[
                             Expression::Number(123),
-                            Expression::String("asd".to_string()),
-                        ]),
+                            Expression::String(Cow::Borrowed("asd")),
+                        ])),
                         right: Expression::Named(NamedExpression::CT(CT {
-                            key: "state".to_string(),
+                            key: Cow::Borrowed("state"),
                             family: None,
                             dir: None,
                         })),
                         op: Operator::EQ,
                     }),
                     Statement::Drop(Some(Drop {})),
-                ],
+                ]),
                 handle: None,
                 index: None,
                 comment: None,
             }))),
-        ],
+        ]),
     };
 
     let j = serde_json::to_string(&_a).unwrap();

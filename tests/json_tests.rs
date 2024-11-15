@@ -2,6 +2,7 @@ use nftables::expr::{self, Expression, Meta, MetaKey, NamedExpression};
 use nftables::stmt::{self, Counter, Match, Operator, Queue, Statement};
 use nftables::{schema::*, types::*};
 use serde_json::json;
+use std::borrow::Cow;
 
 #[test]
 fn test_chain_table_rule_inet() {
@@ -12,16 +13,16 @@ fn test_chain_table_rule_inet() {
     //    '{ type filter hook forward priority 0; policy accept; }'"
     // ```
     let expected: Nftables = Nftables {
-        objects: vec![
+        objects: Cow::Borrowed(&[
             NfObject::CmdObject(NfCmd::Add(NfListObject::Table(Table {
                 family: NfFamily::INet,
-                name: "some_inet_table".to_string(),
+                name: Cow::Borrowed("some_inet_table"),
                 handle: None,
             }))),
             NfObject::CmdObject(NfCmd::Add(NfListObject::Chain(Chain {
                 family: NfFamily::INet,
-                table: "some_inet_table".to_string(),
-                name: "some_inet_chain".to_string(),
+                table: Cow::Borrowed("some_inet_table"),
+                name: Cow::Borrowed("some_inet_chain"),
                 newname: None,
                 handle: None,
                 _type: Some(NfChainType::Filter),
@@ -30,7 +31,7 @@ fn test_chain_table_rule_inet() {
                 dev: None,
                 policy: Some(NfChainPolicy::Accept),
             }))),
-        ],
+        ]),
     };
     let json = json!({"nftables":[
         {"add":{"table":{"family":"inet","name":"some_inet_table"}}},
@@ -53,25 +54,25 @@ fn test_flowtable() {
     //  add rule inet some_inet_table forward ct state established flow add @flowed'
     // ```
     let expected: Nftables = Nftables {
-        objects: vec![
-            NfObject::ListObject(Box::new(NfListObject::Table(Table {
+        objects: Cow::Borrowed(&[
+            NfObject::ListObject(NfListObject::Table(Table {
                 family: NfFamily::INet,
-                name: "some_inet_table".to_string(),
+                name: Cow::Borrowed("some_inet_table"),
                 handle: None,
-            }))),
-            NfObject::ListObject(Box::new(NfListObject::FlowTable(FlowTable {
+            })),
+            NfObject::ListObject(NfListObject::FlowTable(FlowTable {
                 family: NfFamily::INet,
-                table: "some_inet_table".to_string(),
-                name: "flowed".to_string(),
+                table: Cow::Borrowed("some_inet_table"),
+                name: Cow::Borrowed("flowed"),
                 handle: None,
                 hook: Some(NfHook::Ingress),
                 prio: Some(0),
-                dev: Some(vec!["lo".to_string()]),
-            }))),
-            NfObject::ListObject(Box::new(NfListObject::Chain(Chain {
+                dev: Some(Cow::Borrowed(&[Cow::Borrowed("lo")])),
+            })),
+            NfObject::ListObject(NfListObject::Chain(Chain {
                 family: NfFamily::INet,
-                table: "some_inet_table".to_string(),
-                name: "some_inet_chain".to_string(),
+                table: Cow::Borrowed("some_inet_table"),
+                name: Cow::Borrowed("some_inet_chain"),
                 newname: None,
                 handle: None,
                 _type: Some(NfChainType::Filter),
@@ -79,31 +80,31 @@ fn test_flowtable() {
                 prio: None,
                 dev: None,
                 policy: Some(NfChainPolicy::Accept),
-            }))),
-            NfObject::ListObject(Box::new(NfListObject::Rule(Rule {
+            })),
+            NfObject::ListObject(NfListObject::Rule(Rule {
                 family: NfFamily::INet,
-                table: "some_inet_table".to_string(),
-                chain: "some_inet_chain".to_string(),
-                expr: vec![
+                table: Cow::Borrowed("some_inet_table"),
+                chain: Cow::Borrowed("some_inet_chain"),
+                expr: Cow::Borrowed(&[
                     Statement::Flow(stmt::Flow {
                         op: stmt::SetOp::Add,
-                        flowtable: "@flowed".to_string(),
+                        flowtable: Cow::Borrowed("@flowed"),
                     }),
                     Statement::Match(Match {
                         left: Expression::Named(NamedExpression::CT(expr::CT {
-                            key: "state".to_string(),
+                            key: Cow::Borrowed("state"),
                             family: None,
                             dir: None,
                         })),
                         op: Operator::IN,
-                        right: Expression::String("established".to_string()),
+                        right: Expression::String(Cow::Borrowed("established")),
                     }),
-                ],
+                ]),
                 handle: None,
                 index: None,
                 comment: None,
-            }))),
-        ],
+            })),
+        ]),
     };
     let json = json!({"nftables":[
         {"table":{"family":"inet","name":"some_inet_table"}},
@@ -130,31 +131,33 @@ fn test_insert() {
         objects: vec![NfObject::CmdObject(NfCmd::Insert(NfListObject::Rule(
             Rule {
                 family: NfFamily::INet,
-                table: "some_inet_table".to_string(),
-                chain: "some_inet_chain".to_string(),
+                table: "some_inet_table".into(),
+                chain: "some_inet_chain".into(),
                 expr: vec![
                     Statement::Match(Match {
                         left: Expression::Named(NamedExpression::Meta(Meta {
                             key: MetaKey::Iifname,
                         })),
-                        right: Expression::String("br-lan".to_string()),
+                        right: Expression::String("br-lan".into()),
                         op: Operator::EQ,
                     }),
                     Statement::Match(Match {
                         left: Expression::Named(NamedExpression::Meta(Meta {
                             key: MetaKey::Oifname,
                         })),
-                        right: Expression::String("wg_exit".to_string()),
+                        right: Expression::String("wg_exit".into()),
                         op: Operator::EQ,
                     }),
                     Statement::Counter(Counter::Anonymous(None)),
                     Statement::Accept(None),
-                ],
+                ]
+                .into(),
                 handle: None,
                 index: Some(0),
                 comment: None,
             },
-        )))],
+        )))]
+        .into(),
     };
     let json = json!({"nftables":[{"insert":
         {"rule":{"family":"inet","table":"some_inet_table","chain":"some_inet_chain","expr":[
@@ -170,16 +173,16 @@ fn test_insert() {
 #[test]
 fn test_parsing_of_queue_without_flags() {
     let expected = Nftables {
-        objects: vec![NfObject::ListObject(Box::new(NfListObject::Rule(Rule {
+        objects: Cow::Borrowed(&[NfObject::ListObject(NfListObject::Rule(Rule {
             family: NfFamily::IP,
-            table: "test_table".to_string(),
-            chain: "test_chain".to_string(),
-            expr: vec![
+            table: Cow::Borrowed("test_table"),
+            chain: Cow::Borrowed("test_chain"),
+            expr: Cow::Borrowed(&[
                 Statement::Match(Match {
                     left: Expression::Named(NamedExpression::Payload(
                         nftables::expr::Payload::PayloadField(nftables::expr::PayloadField {
-                            protocol: "udp".to_string(),
-                            field: "dport".to_string(),
+                            protocol: Cow::Borrowed("udp"),
+                            field: Cow::Borrowed("dport"),
                         }),
                     )),
                     right: Expression::Number(20000),
@@ -189,11 +192,11 @@ fn test_parsing_of_queue_without_flags() {
                     num: Expression::Number(0),
                     flags: None,
                 }),
-            ],
+            ]),
             handle: Some(2),
             index: None,
             comment: None,
-        })))],
+        }))]),
     };
 
     let json = json!({
@@ -246,16 +249,16 @@ fn test_queue_json_serialisation() {
 #[test]
 fn test_parse_payload() {
     let expected = Nftables {
-        objects: vec![NfObject::ListObject(Box::new(NfListObject::Rule(Rule {
+        objects: Cow::Borrowed(&[NfObject::ListObject(NfListObject::Rule(Rule {
             family: NfFamily::IP,
-            table: "test_table".to_string(),
-            chain: "test_chain".to_string(),
-            expr: vec![
+            table: Cow::Borrowed("test_table"),
+            chain: Cow::Borrowed("test_chain"),
+            expr: Cow::Borrowed(&[
                 Statement::Match(Match {
                     left: Expression::Named(NamedExpression::Payload(
                         nftables::expr::Payload::PayloadField(nftables::expr::PayloadField {
-                            protocol: "udp".to_string(),
-                            field: "dport".to_string(),
+                            protocol: Cow::Borrowed("udp"),
+                            field: Cow::Borrowed("dport"),
                         }),
                     )),
                     right: Expression::Number(20000),
@@ -272,11 +275,11 @@ fn test_parse_payload() {
                     right: Expression::Number(20),
                     op: Operator::EQ,
                 }),
-            ],
+            ]),
             handle: Some(2),
             index: None,
             comment: None,
-        })))],
+        }))]),
     };
 
     let json = json!({

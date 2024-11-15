@@ -8,6 +8,7 @@ use crate::types::{RejectCode, SynProxyFlag};
 use crate::visitor::single_string_to_option_hashset_logflag;
 
 use crate::expr::Expression;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -56,7 +57,7 @@ pub enum Statement {
 
     #[serde(rename = "ct helper")]
     /// Enable the specified conntrack helper for this packet.
-    CTHelper(String), // CT helper reference.
+    CTHelper(Cow<'static, str>), // CT helper reference.
 
     Meter(Meter),
     Queue(Queue),
@@ -104,7 +105,7 @@ pub struct Return {}
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct JumpTarget {
-    pub target: String,
+    pub target: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -126,7 +127,7 @@ pub struct Match {
 /// Anonymous or named Counter.
 pub enum Counter {
     /// A counter referenced by name.
-    Named(String),
+    Named(Cow<'static, str>),
     /// An anonymous counter.
     Anonymous(Option<AnonymousCounter>),
 }
@@ -160,7 +161,7 @@ pub enum QuotaOrQuotaRef {
     /// Anonymous quota object.
     Quota(Quota),
     /// Reference to a named quota object.
-    QuotaRef(String),
+    QuotaRef(Cow<'static, str>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -169,13 +170,13 @@ pub struct Quota {
     /// Quota value.
     pub val: u32,
     /// Unit of `val`, e.g. `"kbytes"` or `"mbytes"`. If omitted, defaults to `"bytes"`.
-    pub val_unit: String,
+    pub val_unit: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Quota used so far. Optional on input. If given, serves as initial value.
     pub used: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Unit of `used`. Defaults to `"bytes"`.
-    pub used_unit: Option<String>,
+    pub used_unit: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// If `true`, will match if quota was exceeded. Defaults to `false`.
     pub inv: Option<bool>,
@@ -188,16 +189,16 @@ pub struct Limit {
     pub rate: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Unit of `rate`, e.g. `"packets"` or `"mbytes"`. If omitted, defaults to `"packets"`.
-    pub rate_unit: Option<String>,
+    pub rate_unit: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Denominator of rate, e.g. "week" or "minutes".
-    pub per: Option<String>,
+    pub per: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Burst value. Defaults to `0`.
     pub burst: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Unit of `burst`, ignored if `rate_unit` is `"packets"`. Defaults to `"bytes"`.
-    pub burst_unit: Option<String>,
+    pub burst_unit: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// If `true`, will match if the limit was exceeded. Defaults to `false`.
     pub inv: Option<bool>,
@@ -209,7 +210,7 @@ pub struct Flow {
     /// Operator on flow/set.
     pub op: SetOp,
     /// The [flow table][crate::schema::FlowTable]'s name.
-    pub flowtable: String,
+    pub flowtable: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -316,7 +317,7 @@ pub struct Set {
     /// Set element to add or update.
     pub elem: Expression,
     /// Set reference.
-    pub set: String,
+    pub set: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -333,7 +334,7 @@ pub enum SetOp {
 pub struct Log {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Prefix for log entries.
-    pub prefix: Option<String>,
+    pub prefix: Option<Cow<'static, str>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Log group.
@@ -408,7 +409,7 @@ pub enum LogFlag {
 /// Apply a given statement using a meter.
 pub struct Meter {
     /// Meter name.
-    pub name: String,
+    pub name: Cow<'static, str>,
 
     /// Meter key.
     pub key: Expression,
@@ -480,10 +481,10 @@ pub struct SynProxy {
 /// Redirects the packet to a local socket without changing the packet header in any way.
 pub struct TProxy {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub family: Option<String>,
+    pub family: Option<Cow<'static, str>>,
     pub port: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub addr: Option<String>,
+    pub addr: Option<Cow<'static, str>>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]

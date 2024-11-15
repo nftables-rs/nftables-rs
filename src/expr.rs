@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 use crate::stmt::{Counter, JumpTarget, Statement};
 
@@ -9,11 +9,11 @@ use crate::stmt::{Counter, JumpTarget, Statement};
 /// In their most basic form, they are just immediate values represented as a JSON string, integer or boolean type.
 pub enum Expression {
     // immediates
-    String(String),
+    String(Cow<'static, str>),
     Number(u32),
     Boolean(bool),
     /// List expressions are constructed by plain arrays containing of an arbitrary number of expressions.
-    List(Vec<Expression>),
+    List(Cow<'static, [Expression]>),
     BinaryOperation(BinaryOperation),
     Range(Range),
 
@@ -26,10 +26,10 @@ pub enum Expression {
 /// Wrapper for non-immediate `Expression`s.
 pub enum NamedExpression {
     /// Concatenate several expressions.
-    Concat(Vec<Expression>),
+    Concat(Cow<'static, [Expression]>),
     /// This object constructs an anonymous set.
     /// For mappings, an array of arrays with exactly two elements is expected.
-    Set(Vec<SetItem>),
+    Set(Cow<'static, [SetItem]>),
     Map(Box<Map>),
     Prefix(Prefix),
 
@@ -87,7 +87,7 @@ pub struct Prefix {
 /// Construct a range of values.
 /// The first array item denotes the lower boundary, the second one the upper boundary.
 pub struct Range {
-    pub range: Vec<Expression>,
+    pub range: Cow<'static, [Expression]>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -111,8 +111,8 @@ pub struct PayloadRaw {
 /// Construct a payload expression, i.e. a reference to a certain part of packet data.
 /// Allows to reference a field by name (`field`) in a named packet header (`protocol`).
 pub struct PayloadField {
-    pub protocol: String,
-    pub field: String,
+    pub protocol: Cow<'static, str>,
+    pub field: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -134,8 +134,8 @@ pub enum PayloadBase {
 /// Create a reference to a field (field) in an IPv6 extension header (name).
 /// `offset` is used only for rt0 protocol.
 pub struct Exthdr {
-    pub name: String,
-    pub field: String,
+    pub name: Cow<'static, str>,
+    pub field: Cow<'static, str>,
     pub offset: u32,
 }
 
@@ -143,16 +143,16 @@ pub struct Exthdr {
 #[serde(rename = "tcp option")]
 /// Create a reference to a field (`field`) of a TCP option header (`name`).
 pub struct TcpOption {
-    pub name: String,
-    pub field: String,
+    pub name: Cow<'static, str>,
+    pub field: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename = "sctp chunk")]
 /// Create a reference to a field (`field`) of an SCTP chunk (`name`).
 pub struct SctpChunk {
-    pub name: String,
-    pub field: String,
+    pub name: Cow<'static, str>,
+    pub field: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -225,7 +225,7 @@ pub enum RTFamily {
 #[serde(rename = "ct")]
 /// Create a reference to packet conntrack data.
 pub struct CT {
-    pub key: String,
+    pub key: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub family: Option<CTFamily>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -365,7 +365,7 @@ pub struct Elem {
     pub val: Box<Expression>,
     pub timeout: Option<u32>,
     pub expires: Option<u32>,
-    pub comment: Option<String>,
+    pub comment: Option<Cow<'static, str>>,
     pub counter: Option<Counter>,
 }
 
@@ -373,7 +373,7 @@ pub struct Elem {
 #[serde(rename = "socket")]
 /// Construct a reference to packet’s socket.
 pub struct Socket {
-    pub key: String,
+    pub key: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -384,7 +384,7 @@ pub struct Osf {
     ///  Name of the OS signature to match.
     /// All signatures can be found at pf.os file.
     /// Use "unknown" for OS signatures that the expression could not detect.
-    pub key: String,
+    pub key: Cow<'static, str>,
     /// Do TTL checks on the packet to determine the operating system.
     pub ttl: OsfTtl,
 }

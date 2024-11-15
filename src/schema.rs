@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 use crate::{
     expr::Expression, stmt::Statement, types::*, visitor::single_string_to_option_vec,
@@ -18,7 +18,7 @@ use strum_macros::EnumString;
 pub struct Nftables {
     /// An array containing [commands](NfCmd) (for input) or [ruleset elements](NfListObject) (for output).
     #[serde(rename = "nftables")]
-    pub objects: Vec<NfObject>,
+    pub objects: Cow<'static, [NfObject]>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -28,7 +28,7 @@ pub enum NfObject {
     /// A command.
     CmdObject(NfCmd),
     /// A ruleset element.
-    ListObject(Box<NfListObject>),
+    ListObject(NfListObject),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -42,9 +42,9 @@ pub enum NfListObject {
     /// A rule element.
     Rule(Rule),
     /// A set element.
-    Set(Set),
+    Set(Box<Set>),
     /// A map element.
-    Map(Map),
+    Map(Box<Map>),
     /// An element manipulation.
     Element(Element),
     /// A flow table.
@@ -124,11 +124,11 @@ pub enum ResetObject {
     /// A counter to reset.
     Counter(Counter),
     /// A list of counters to reset.
-    Counters(Vec<Counter>),
+    Counters(Cow<'static, [Counter]>),
     /// A quota to reset.
     Quota(Quota),
     /// A list of quotas to reset.
-    Quotas(Vec<Quota>),
+    Quotas(Cow<'static, [Quota]>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -157,7 +157,7 @@ pub struct Table {
     /// The table’s [family](NfFamily), e.g. "ip" or "ip6".
     pub family: NfFamily,
     /// The table’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The table’s handle.
     ///
@@ -171,7 +171,7 @@ impl Default for Table {
     fn default() -> Self {
         Table {
             family: DEFAULT_FAMILY,
-            name: DEFAULT_TABLE.to_string(),
+            name: DEFAULT_TABLE.into(),
             handle: None,
         }
     }
@@ -183,12 +183,12 @@ pub struct Chain {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The chain’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// New name of the chain when supplied to the [rename command](NfCmd::Rename).
-    pub newname: Option<String>,
+    pub newname: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The chain’s handle.
     /// In input, it is used only in [delete command](NfCmd::Delete) as alternative to **name**.
@@ -216,7 +216,7 @@ pub struct Chain {
     /// Required for [base chains](Base chains).
     ///
     /// (Base chains): <https://wiki.nftables.org/wiki-nftables/index.php/Configuring_chains#Adding_base_chains>
-    pub dev: Option<String>,
+    pub dev: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The chain’s [policy](NfChainPolicy).
     /// Required for [base chains](Base chains).
@@ -230,8 +230,8 @@ impl Default for Chain {
     fn default() -> Self {
         Chain {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: DEFAULT_CHAIN.to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: DEFAULT_CHAIN.into(),
             newname: None,
             handle: None,
             _type: None,
@@ -252,13 +252,13 @@ pub struct Rule {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The chain’s name.
-    pub chain: String,
+    pub chain: Cow<'static, str>,
     /// An array of statements this rule consists of.
     ///
     /// In input, it is used in [add](NfCmd::Add)/[insert](NfCmd::Insert)/[replace](NfCmd::Replace) commands only.
-    pub expr: Vec<Statement>,
+    pub expr: Cow<'static, [Statement]>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The rule’s handle.
     ///
@@ -272,7 +272,7 @@ pub struct Rule {
     pub index: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Optional rule comment.
-    pub comment: Option<String>,
+    pub comment: Option<Cow<'static, str>>,
 }
 
 /// Default rule with no expressions.
@@ -280,9 +280,9 @@ impl Default for Rule {
     fn default() -> Self {
         Rule {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            chain: DEFAULT_CHAIN.to_string(),
-            expr: vec![],
+            table: DEFAULT_TABLE.into(),
+            chain: DEFAULT_CHAIN.into(),
+            expr: Cow::Borrowed(&[][..]),
             handle: None,
             index: None,
             comment: None,
@@ -296,9 +296,9 @@ pub struct Set {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The set’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The set’s handle. For input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -318,7 +318,7 @@ pub struct Set {
     ///
     /// A single set element might be given as string, integer or boolean value for simple cases. If additional properties are required, a formal elem object may be used.
     /// Multiple elements may be given in an array.
-    pub elem: Option<Vec<Expression>>,
+    pub elem: Option<Cow<'static, [Expression]>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Element timeout in seconds.
     pub timeout: Option<u32>,
@@ -332,7 +332,7 @@ pub struct Set {
     /// Optional set comment.
     ///
     /// Set comment attribute requires at least nftables 0.9.7 and kernel 5.10
-    pub comment: Option<String>,
+    pub comment: Option<Cow<'static, str>>,
 }
 
 /// Default set `"myset"` with type `ipv4_addr`.
@@ -340,8 +340,8 @@ impl Default for Set {
     fn default() -> Self {
         Set {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "myset".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "myset".into(),
             handle: None,
             set_type: SetTypeValue::Single(SetType::Ipv4Addr),
             policy: None,
@@ -362,9 +362,9 @@ pub struct Map {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The map’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The map’s handle. For input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -387,7 +387,7 @@ pub struct Map {
     ///
     /// A single set element might be given as string, integer or boolean value for simple cases. If additional properties are required, a formal elem object may be used.
     /// Multiple elements may be given in an array.
-    pub elem: Option<Vec<Expression>>,
+    pub elem: Option<Cow<'static, [Expression]>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Element timeout in seconds.
     pub timeout: Option<u32>,
@@ -401,7 +401,7 @@ pub struct Map {
     /// Optional map comment.
     ///
     /// The map/set comment attribute requires at least nftables 0.9.7 and kernel 5.10
-    pub comment: Option<String>,
+    pub comment: Option<Cow<'static, str>>,
 }
 
 /// Default map "mymap" that maps ipv4addrs.
@@ -409,8 +409,8 @@ impl Default for Map {
     fn default() -> Self {
         Map {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "mymap".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "mymap".into(),
             handle: None,
             set_type: SetTypeValue::Single(SetType::Ipv4Addr),
             map: SetTypeValue::Single(SetType::Ipv4Addr),
@@ -433,7 +433,7 @@ pub enum SetTypeValue {
     /// Single set type.
     Single(SetType),
     /// Concatenated set types.
-    Concatenated(Vec<SetType>),
+    Concatenated(Cow<'static, [SetType]>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, EnumString)]
@@ -511,13 +511,13 @@ pub struct Element {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The set’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     /// A single set element might be given as string, integer or boolean value for simple cases.
     /// If additional properties are required, a formal `elem` object may be used.
     /// Multiple elements may be given in an array.
-    pub elem: Vec<Expression>,
+    pub elem: Cow<'static, [Expression]>,
 }
 
 /// Default manipulation element for [set](Set) "myset".
@@ -525,9 +525,9 @@ impl Default for Element {
     fn default() -> Self {
         Element {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "myset".to_string(),
-            elem: Vec::new(),
+            table: DEFAULT_TABLE.into(),
+            name: "myset".into(),
+            elem: Cow::Borrowed(&[][..]),
         }
     }
 }
@@ -541,9 +541,9 @@ pub struct FlowTable {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The flow table’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The flow table’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -560,8 +560,8 @@ pub struct FlowTable {
     /// The *devices* are specified as iifname(s) of the input interface(s) of the traffic that should be offloaded.
     ///
     /// Devices are required for both traffic directions.
-    /// Vec of device names, e.g. `vec!["wg0".to_string(), "wg0".to_string()]`.
-    pub dev: Option<Vec<String>>,
+    /// Cow slice of device names, e.g. `vec!["wg0".into(), "wg1".into()].into()`.
+    pub dev: Option<Cow<'static, [Cow<'static, str>]>>,
 }
 
 /// Default [flowtable](FlowTable) named "myflowtable".
@@ -569,8 +569,8 @@ impl Default for FlowTable {
     fn default() -> Self {
         FlowTable {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "myflowtable".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "myflowtable".into(),
             handle: None,
             hook: None,
             prio: None,
@@ -590,9 +590,9 @@ pub struct Counter {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The counter’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The counter’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -608,8 +608,8 @@ impl Default for Counter {
     fn default() -> Self {
         Counter {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "mycounter".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "mycounter".into(),
             handle: None,
             packets: None,
             bytes: None,
@@ -633,9 +633,9 @@ pub struct Quota {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The quota’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The quota’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -655,8 +655,8 @@ impl Default for Quota {
     fn default() -> Self {
         Quota {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "myquota".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "myquota".into(),
             handle: None,
             bytes: None,
             used: None,
@@ -674,21 +674,21 @@ pub struct CTHelper {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The ct helper’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct helper’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
     #[serde(rename = "type")]
     /// The ct helper type name, e.g. "ftp" or "tftp".
-    pub _type: String,
+    pub _type: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct helper’s layer 4 protocol.
-    pub protocol: Option<String>,
+    pub protocol: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct helper’s layer 3 protocol, e.g. "ip" or "ip6".
-    pub l3proto: Option<String>,
+    pub l3proto: Option<Cow<'static, str>>,
 }
 
 /// Default ftp [ct helper](CTHelper) named "mycthelper".
@@ -696,10 +696,10 @@ impl Default for CTHelper {
     fn default() -> Self {
         CTHelper {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "mycthelper".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "mycthelper".into(),
             handle: None,
-            _type: "ftp".to_string(),
+            _type: "ftp".into(),
             protocol: None,
             l3proto: None,
         }
@@ -719,9 +719,9 @@ pub struct Limit {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The limit’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The limit’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -748,8 +748,8 @@ impl Default for Limit {
     fn default() -> Self {
         Limit {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "mylimit".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "mylimit".into(),
             handle: None,
             rate: None,
             per: None,
@@ -772,7 +772,7 @@ pub enum LimitUnit {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Meter {
-    pub name: String,
+    pub name: Cow<'static, str>,
     pub key: Expression,
     pub stmt: Statement,
 }
@@ -795,10 +795,10 @@ impl Default for Ruleset {
 pub struct MetainfoObject {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The value of version property is equal to the package version as printed by `nft -v`.
-    pub version: Option<String>,
+    pub version: Option<Cow<'static, str>>,
     /// The value of release_name property is equal to the release name as printed by `nft -v`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub release_name: Option<String>,
+    pub release_name: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The JSON Schema version.
     ///
@@ -831,9 +831,9 @@ pub struct CTTimeout {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The ct timeout object’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct timeout object’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -842,13 +842,13 @@ pub struct CTTimeout {
     pub protocol: Option<CTHProto>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The connection state name, e.g. "established", "syn_sent", "close" or "close_wait", for which the timeout value has to be updated.
-    pub state: Option<String>,
+    pub state: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The updated timeout value for the specified connection state.
     pub value: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct timeout object’s layer 3 protocol, e.g. "ip" or "ip6".
-    pub l3proto: Option<String>,
+    pub l3proto: Option<Cow<'static, str>>,
 }
 
 /// Default [ct timeout](CTTimeout) named "mycttimeout"
@@ -856,8 +856,8 @@ impl Default for CTTimeout {
     fn default() -> Self {
         CTTimeout {
             family: DEFAULT_FAMILY,
-            table: DEFAULT_TABLE.to_string(),
-            name: "mycttimeout".to_string(),
+            table: DEFAULT_TABLE.into(),
+            name: "mycttimeout".into(),
             handle: None,
             protocol: None,
             state: None,
@@ -875,15 +875,15 @@ pub struct CTExpectation {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The ct expectation object’s name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct expectation object’s handle. In input, it is used by delete command only.
     pub handle: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct expectation object’s layer 3 protocol, e.g. "ip" or "ip6".
-    pub l3proto: Option<String>,
+    pub l3proto: Option<Cow<'static, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct expectation object’s layer 4 protocol.
     pub protocol: Option<CTHProto>,
@@ -909,9 +909,9 @@ pub struct SynProxy {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: String,
+    pub table: Cow<'static, str>,
     /// The synproxy's name.
-    pub name: String,
+    pub name: Cow<'static, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The synproxy's handle. For input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
