@@ -13,7 +13,7 @@ pub enum Expression {
     Number(u32),
     Boolean(bool),
     /// List expressions are constructed by plain arrays containing of an arbitrary number of expressions.
-    List(Cow<'static, [Expression]>),
+    List(Vec<Expression>),
     BinaryOperation(Box<BinaryOperation>),
     Range(Box<Range>),
 
@@ -26,10 +26,10 @@ pub enum Expression {
 /// Wrapper for non-immediate `Expression`s.
 pub enum NamedExpression {
     /// Concatenate several expressions.
-    Concat(Cow<'static, [Expression]>),
+    Concat(Vec<Expression>),
     /// This object constructs an anonymous set.
     /// For mappings, an array of arrays with exactly two elements is expected.
-    Set(Cow<'static, [SetItem]>),
+    Set(Vec<SetItem>),
     Map(Box<Map>),
     Prefix(Prefix),
 

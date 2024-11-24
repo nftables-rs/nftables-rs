@@ -4,7 +4,7 @@ use std::borrow::Cow;
 #[test]
 fn test_serialize() {
     let _a: Nftables = Nftables {
-        objects: Cow::Borrowed(&[
+        objects: Cow::Owned(vec![
             NfObject::CmdObject(NfCmd::Add(NfListObject::Table(Table {
                 family: NfFamily::INet,
                 name: Cow::Borrowed("namib"),
@@ -26,12 +26,12 @@ fn test_serialize() {
                 family: NfFamily::INet,
                 table: Cow::Borrowed("namib"),
                 chain: Cow::Borrowed("one_chain"),
-                expr: Cow::Borrowed(&[
+                expr: Cow::Owned(vec![
                     Statement::Match(Match {
-                        left: Expression::List(Cow::Borrowed(&[
+                        left: Expression::List(vec![
                             Expression::Number(123),
                             Expression::String(Cow::Borrowed("asd")),
-                        ])),
+                        ]),
                         right: Expression::Named(NamedExpression::CT(CT {
                             key: Cow::Borrowed("state"),
                             family: None,
