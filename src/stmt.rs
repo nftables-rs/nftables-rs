@@ -16,7 +16,7 @@ use std::borrow::Cow;
 /// Statements are the building blocks for rules. Each rule consists of at least one.
 ///
 /// See <https://manpages.debian.org/testing/libnftables1/libnftables-json.5.en.html#STATEMENTS>.
-pub enum Statement {
+pub enum Statement<'a> {
     /// `accept` verdict.
     Accept(Option<Accept>),
     /// `drop` verdict.
@@ -26,55 +26,55 @@ pub enum Statement {
     /// `return` verdict.
     Return(Option<Return>),
     /// `jump` verdict. Expects a target chain name.
-    Jump(JumpTarget),
+    Jump(JumpTarget<'a>),
     /// `goto` verdict. Expects a target chain name.
-    Goto(JumpTarget),
+    Goto(JumpTarget<'a>),
 
-    Match(Match),
+    Match(Match<'a>),
     /// anonymous or named counter.
-    Counter(Counter),
-    Mangle(Mangle),
+    Counter(Counter<'a>),
+    Mangle(Mangle<'a>),
     /// anonymous or named quota.
-    Quota(QuotaOrQuotaRef),
+    Quota(QuotaOrQuotaRef<'a>),
     // TODO: last
-    Limit(Limit),
+    Limit(Limit<'a>),
 
     /// The Flow statement offloads matching network traffic to flowtables,
     /// enabling faster forwarding by bypassing standard processing.
-    Flow(Flow),
-    FWD(Option<FWD>),
+    Flow(Flow<'a>),
+    FWD(Option<FWD<'a>>),
     /// Disable connection tracking for the packet.
     Notrack,
-    Dup(Dup),
-    SNAT(Option<NAT>),
-    DNAT(Option<NAT>),
-    Masquerade(Option<NAT>), // masquerade is subset of NAT options
-    Redirect(Option<NAT>),   // redirect is subset of NAT options
+    Dup(Dup<'a>),
+    SNAT(Option<NAT<'a>>),
+    DNAT(Option<NAT<'a>>),
+    Masquerade(Option<NAT<'a>>), // masquerade is subset of NAT options
+    Redirect(Option<NAT<'a>>),   // redirect is subset of NAT options
     Reject(Option<Reject>),
-    Set(Set),
+    Set(Set<'a>),
     // TODO: map
-    Log(Option<Log>),
+    Log(Option<Log<'a>>),
 
     #[serde(rename = "ct helper")]
     /// Enable the specified conntrack helper for this packet.
-    CTHelper(Cow<'static, str>), // CT helper reference.
+    CTHelper(Cow<'a, str>), // CT helper reference.
 
-    Meter(Meter),
-    Queue(Queue),
+    Meter(Meter<'a>),
+    Queue(Queue<'a>),
     #[serde(rename = "vmap")]
     // TODO: vmap is expr, not stmt!
-    VerdictMap(VerdictMap),
+    VerdictMap(VerdictMap<'a>),
 
     #[serde(rename = "ct count")]
-    CTCount(CTCount),
+    CTCount(CTCount<'a>),
 
     #[serde(rename = "ct timeout")]
     /// Assign connection tracking timeout policy.
-    CTTimeout(Expression), // CT timeout reference.
+    CTTimeout(Expression<'a>), // CT timeout reference.
 
     #[serde(rename = "ct expectation")]
     /// Assign connection tracking expectation.
-    CTExpectation(Expression), // CT expectation reference.
+    CTExpectation(Expression<'a>), // CT expectation reference.
 
     /// This represents an xt statement from xtables compat interface.
     /// Sadly, at this point, it is not possible to provide any further information about its content.
@@ -82,7 +82,7 @@ pub enum Statement {
     /// A netfilter synproxy intercepts new TCP connections and handles the initial 3-way handshake using syncookies instead of conntrack to establish the connection.
     SynProxy(SynProxy),
     /// Redirects the packet to a local socket without changing the packet header in any way.
-    TProxy(TProxy),
+    TProxy(TProxy<'a>),
     // TODO: reset
     // TODO: secmark
 }
@@ -104,8 +104,8 @@ pub struct Continue {}
 pub struct Return {}
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct JumpTarget {
-    pub target: Cow<'static, str>,
+pub struct JumpTarget<'a> {
+    pub target: Cow<'a, str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -113,11 +113,11 @@ pub struct JumpTarget {
 ///
 /// If the statement evaluates to true, the next statement in this rule is considered.
 /// If not, processing continues with the next rule in the same chain.
-pub struct Match {
+pub struct Match<'a> {
     /// Left hand side of this match.
-    pub left: Expression,
+    pub left: Expression<'a>,
     /// Right hand side of this match.
-    pub right: Expression,
+    pub right: Expression<'a>,
     /// Operator indicating the type of comparison.
     pub op: Operator,
 }
@@ -125,9 +125,9 @@ pub struct Match {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 /// Anonymous or named Counter.
-pub enum Counter {
+pub enum Counter<'a> {
     /// A counter referenced by name.
-    Named(Cow<'static, str>),
+    Named(Cow<'a, str>),
     /// An anonymous counter.
     Anonymous(Option<AnonymousCounter>),
 }
@@ -147,36 +147,36 @@ pub struct AnonymousCounter {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// This changes the packet data or meta info.
-pub struct Mangle {
+pub struct Mangle<'a> {
     /// The packet data to be changed, given as an `exthdr`, `payload`, `meta`, `ct` or `ct helper` expression.
-    pub key: Expression,
+    pub key: Expression<'a>,
     /// Value to change data to.
-    pub value: Expression,
+    pub value: Expression<'a>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 /// Represents an anonymous or named quota object.
-pub enum QuotaOrQuotaRef {
+pub enum QuotaOrQuotaRef<'a> {
     /// Anonymous quota object.
-    Quota(Quota),
+    Quota(Quota<'a>),
     /// Reference to a named quota object.
-    QuotaRef(Cow<'static, str>),
+    QuotaRef(Cow<'a, str>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Creates an anonymous quota which lives in the rule it appears in.
-pub struct Quota {
+pub struct Quota<'a> {
     /// Quota value.
     pub val: u32,
     /// Unit of `val`, e.g. `"kbytes"` or `"mbytes"`. If omitted, defaults to `"bytes"`.
-    pub val_unit: Cow<'static, str>,
+    pub val_unit: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Quota used so far. Optional on input. If given, serves as initial value.
     pub used: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Unit of `used`. Defaults to `"bytes"`.
-    pub used_unit: Option<Cow<'static, str>>,
+    pub used_unit: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// If `true`, will match if quota was exceeded. Defaults to `false`.
     pub inv: Option<bool>,
@@ -184,21 +184,21 @@ pub struct Quota {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Creates an anonymous limit which lives in the rule it appears in.
-pub struct Limit {
+pub struct Limit<'a> {
     /// Rate value to limit to.
     pub rate: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Unit of `rate`, e.g. `"packets"` or `"mbytes"`. If omitted, defaults to `"packets"`.
-    pub rate_unit: Option<Cow<'static, str>>,
+    pub rate_unit: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Denominator of rate, e.g. "week" or "minutes".
-    pub per: Option<Cow<'static, str>>,
+    pub per: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Burst value. Defaults to `0`.
     pub burst: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Unit of `burst`, ignored if `rate_unit` is `"packets"`. Defaults to `"bytes"`.
-    pub burst_unit: Option<Cow<'static, str>>,
+    pub burst_unit: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// If `true`, will match if the limit was exceeded. Defaults to `false`.
     pub inv: Option<bool>,
@@ -206,25 +206,25 @@ pub struct Limit {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Forward a packet to a different destination.
-pub struct Flow {
+pub struct Flow<'a> {
     /// Operator on flow/set.
     pub op: SetOp,
     /// The [flow table][crate::schema::FlowTable]'s name.
-    pub flowtable: Cow<'static, str>,
+    pub flowtable: Cow<'a, str>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Forward a packet to a different destination.
-pub struct FWD {
+pub struct FWD<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Interface to forward the packet on.
-    pub dev: Option<Expression>,
+    pub dev: Option<Expression<'a>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Family of addr.
     pub family: Option<FWDFamily>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// IP(v6) address to forward the packet to.
-    pub addr: Option<Expression>,
+    pub addr: Option<Expression<'a>>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -237,21 +237,21 @@ pub enum FWDFamily {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Duplicate a packet to a different destination.
-pub struct Dup {
+pub struct Dup<'a> {
     /// Address to duplicate packet to.
-    pub addr: Expression,
+    pub addr: Expression<'a>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Interface to duplicate packet on. May be omitted to not specify an interface explicitly.
-    pub dev: Option<Expression>,
+    pub dev: Option<Expression<'a>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Perform Network Address Translation.
 /// Referenced by `SNAT` and `DNAT` statements.
-pub struct NAT {
+pub struct NAT<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Address to translate to.
-    pub addr: Option<Expression>,
+    pub addr: Option<Expression<'a>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Family of addr, either ip or ip6. Required in inet table family.
     pub family: Option<NATFamily>,
@@ -311,13 +311,13 @@ pub enum RejectType {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Dynamically add/update elements to a set.
-pub struct Set {
+pub struct Set<'a> {
     /// Operator on set.
     pub op: SetOp,
     /// Set element to add or update.
-    pub elem: Expression,
+    pub elem: Expression<'a>,
     /// Set reference.
-    pub set: Cow<'static, str>,
+    pub set: Cow<'a, str>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -331,10 +331,10 @@ pub enum SetOp {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Log the packet.
 /// All properties are optional.
-pub struct Log {
+pub struct Log<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Prefix for log entries.
-    pub prefix: Option<Cow<'static, str>>,
+    pub prefix: Option<Cow<'a, str>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Log group.
@@ -361,8 +361,8 @@ pub struct Log {
     pub flags: Option<HashSet<LogFlag>>,
 }
 
-impl Log {
-    pub fn new(group: Option<u32>) -> Log {
+impl Log<'_> {
+    pub fn new(group: Option<u32>) -> Self {
         Log {
             prefix: None,
             group,
@@ -407,22 +407,22 @@ pub enum LogFlag {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Apply a given statement using a meter.
-pub struct Meter {
+pub struct Meter<'a> {
     /// Meter name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
 
     /// Meter key.
-    pub key: Expression,
+    pub key: Expression<'a>,
 
     /// Meter statement.
-    pub stmt: Box<Statement>,
+    pub stmt: Box<Statement<'a>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 /// Queue the packet to userspace.
-pub struct Queue {
+pub struct Queue<'a> {
     /// Queue number.
-    pub num: Expression,
+    pub num: Expression<'a>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Queue flags.
@@ -440,20 +440,20 @@ pub enum QueueFlag {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename = "vmap")]
 /// Apply a verdict conditionally.
-pub struct VerdictMap {
+pub struct VerdictMap<'a> {
     /// Map key.
-    pub key: Expression,
+    pub key: Expression<'a>,
 
     /// Mapping expression consisting of value/verdict pairs.
-    pub data: Expression,
+    pub data: Expression<'a>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename = "ct count")]
 /// Limit the number of connections using conntrack.
-pub struct CTCount {
+pub struct CTCount<'a> {
     /// Connection count threshold.
-    pub val: Expression,
+    pub val: Expression<'a>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// If `true`, match if `val` was exceeded. If omitted, defaults to `false`.
@@ -479,12 +479,12 @@ pub struct SynProxy {
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 /// Redirects the packet to a local socket without changing the packet header in any way.
-pub struct TProxy {
+pub struct TProxy<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub family: Option<Cow<'static, str>>,
+    pub family: Option<Cow<'a, str>>,
     pub port: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub addr: Option<Cow<'static, str>>,
+    pub addr: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]

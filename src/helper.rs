@@ -33,7 +33,7 @@ pub enum NftablesError {
 pub fn get_current_ruleset(
     program: Option<&str>,
     args: Option<&[&str]>,
-) -> Result<Nftables, NftablesError> {
+) -> Result<Nftables<'static>, NftablesError> {
     let output = get_current_ruleset_raw(program, args)?;
     serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }

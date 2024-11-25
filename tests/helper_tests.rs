@@ -80,7 +80,7 @@ fn test_remove_unknown_table() {
     assert!(matches!(err, NftablesError::NftFailed { .. }));
 }
 
-fn example_ruleset(with_undo: bool) -> schema::Nftables {
+fn example_ruleset(with_undo: bool) -> schema::Nftables<'static> {
     let mut batch = Batch::new();
     // create table "test-table-01"
     let table_name = "test-table-01";
@@ -126,9 +126,9 @@ fn example_ruleset(with_undo: bool) -> schema::Nftables {
         family: types::NfFamily::IP,
         table: table_name.into(),
         name: set_name.into(),
-        elem: Cow::Borrowed(&[
-            expr::Expression::String(Cow::Borrowed("127.0.0.1")),
-            expr::Expression::String(Cow::Borrowed("127.0.0.2")),
+        elem: Cow::Owned(vec![
+            expr::Expression::String("127.0.0.1".into()),
+            expr::Expression::String("127.0.0.2".into()),
         ]),
     }));
     if with_undo {
@@ -141,7 +141,7 @@ fn example_ruleset(with_undo: bool) -> schema::Nftables {
     batch.to_nftables()
 }
 
-fn get_flush_ruleset() -> schema::Nftables {
+fn get_flush_ruleset() -> schema::Nftables<'static> {
     let mut batch = Batch::new();
     batch.add_cmd(schema::NfCmd::Flush(schema::FlushObject::Ruleset(None)));
     batch.to_nftables()

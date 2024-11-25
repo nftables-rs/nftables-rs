@@ -15,59 +15,59 @@ use strum_macros::EnumString;
 /// See [libnftables-json global structure](Global Structure).
 ///
 /// (Global Structure): <https://manpages.debian.org/testing/libnftables1/libnftables-json.5.en.html#GLOBAL_STRUCTURE>
-pub struct Nftables {
+pub struct Nftables<'a> {
     /// An array containing [commands](NfCmd) (for input) or [ruleset elements](NfListObject) (for output).
     #[serde(rename = "nftables")]
-    pub objects: Cow<'static, [NfObject]>,
+    pub objects: Cow<'a, [NfObject<'a>]>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 /// A [ruleset element](NfListObject) or [command](NfCmd) in an [nftables document](Nftables).
-pub enum NfObject {
+pub enum NfObject<'a> {
     /// A command.
-    CmdObject(NfCmd),
+    CmdObject(NfCmd<'a>),
     /// A ruleset element.
-    ListObject(NfListObject),
+    ListObject(NfListObject<'a>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 /// A ruleset element in an [nftables document](Nftables).
-pub enum NfListObject {
+pub enum NfListObject<'a> {
     /// A table element.
-    Table(Table),
+    Table(Table<'a>),
     /// A chain element.
-    Chain(Chain),
+    Chain(Chain<'a>),
     /// A rule element.
-    Rule(Rule),
+    Rule(Rule<'a>),
     /// A set element.
-    Set(Box<Set>),
+    Set(Box<Set<'a>>),
     /// A map element.
-    Map(Box<Map>),
+    Map(Box<Map<'a>>),
     /// An element manipulation.
-    Element(Element),
+    Element(Element<'a>),
     /// A flow table.
-    FlowTable(FlowTable),
+    FlowTable(FlowTable<'a>),
     /// A counter.
-    Counter(Counter),
+    Counter(Counter<'a>),
     /// A quota.
-    Quota(Quota),
+    Quota(Quota<'a>),
     #[serde(rename = "ct helper")]
     /// A conntrack helper (ct helper).
-    CTHelper(CTHelper),
+    CTHelper(CTHelper<'a>),
     /// A limit.
-    Limit(Limit),
+    Limit(Limit<'a>),
     #[serde(rename = "metainfo")]
     /// The metainfo object.
-    MetainfoObject(MetainfoObject),
+    MetainfoObject(MetainfoObject<'a>),
     /// A conntrack timeout (ct timeout).
-    CTTimeout(CTTimeout),
+    CTTimeout(CTTimeout<'a>),
     #[serde(rename = "ct expectation")]
     /// A conntrack expectation (ct expectation).
-    CTExpectation(CTExpectation),
+    CTExpectation(CTExpectation<'a>),
     /// A synproxy object.
-    SynProxy(SynProxy),
+    SynProxy(SynProxy<'a>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -77,74 +77,74 @@ pub enum NfListObject {
 /// Its value is a ruleset element - basically identical to output elements,
 /// apart from certain properties which may be interpreted differently or are
 /// required when output generally omits them.
-pub enum NfCmd {
+pub enum NfCmd<'a> {
     /// Add a new ruleset element to the kernel.
-    Add(NfListObject),
+    Add(NfListObject<'a>),
     /// Replace a rule.
     ///
     /// In [RULE](Rule), the **handle** property is mandatory and identifies
     /// the rule to be replaced.
-    Replace(Rule),
+    Replace(Rule<'a>),
     /// Identical to [add command](NfCmd::Add), but returns an error if the object already exists.
-    Create(NfListObject), // TODO: ADD_OBJECT is subset of NfListObject
+    Create(NfListObject<'a>), // TODO: ADD_OBJECT is subset of NfListObject
     /// Insert an object.
     ///
     /// This command is identical to [add](NfCmd::Add) for rules, but instead of
     /// appending the rule to the chain by default, it inserts at first position.
     /// If a handle or index property is given, the rule is inserted before the
     /// rule identified by those properties.
-    Insert(NfListObject),
+    Insert(NfListObject<'a>),
     /// Delete an object from the ruleset.
     ///
     /// Only the minimal number of properties required to uniquely identify an
     /// object is generally needed in the enclosed object.
     /// For most ruleset elements, this is **family** and **table** plus either
     /// **handle** or **name** (except rules since they don’t have a name).
-    Delete(NfListObject), // TODO: ADD_OBJECT is subset of NfListObject
+    Delete(NfListObject<'a>), // TODO: ADD_OBJECT is subset of NfListObject
     /// List ruleset elements.
     ///
     /// The plural forms are used to list all objects of that kind,
     /// optionally filtered by family and for some, also table.
-    List(NfListObject),
+    List(NfListObject<'a>),
     /// Reset state in suitable objects, i.e. zero their internal counter.
-    Reset(ResetObject),
+    Reset(ResetObject<'a>),
     /// Empty contents in given object, e.g. remove all chains from given table
     /// or remove all elements from given set.
-    Flush(FlushObject),
+    Flush(FlushObject<'a>),
     /// Rename a [chain](Chain).
     ///
     /// The new name is expected in a dedicated property named **newname**.
-    Rename(Chain),
+    Rename(Chain<'a>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 /// Reset state in suitable objects, i.e. zero their internal counter.
-pub enum ResetObject {
+pub enum ResetObject<'a> {
     /// A counter to reset.
-    Counter(Counter),
+    Counter(Counter<'a>),
     /// A list of counters to reset.
-    Counters(Cow<'static, [Counter]>),
+    Counters(Cow<'a, [Counter<'a>]>),
     /// A quota to reset.
-    Quota(Quota),
+    Quota(Quota<'a>),
     /// A list of quotas to reset.
-    Quotas(Cow<'static, [Quota]>),
+    Quotas(Cow<'a, [Quota<'a>]>),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 /// Empty contents in given object, e.g. remove all chains from given table or remove all elements from given set.
-pub enum FlushObject {
+pub enum FlushObject<'a> {
     /// A table to flush (i.e., remove all chains from table).
-    Table(Table),
+    Table(Table<'a>),
     /// A chain to flush (i.e., remove all rules from chain).
-    Chain(Chain),
+    Chain(Chain<'a>),
     /// A set to flush (i.e., remove all elements from set).
-    Set(Box<Set>),
+    Set(Box<Set<'a>>),
     /// A map to flush (i.e., remove all elements from map).
-    Map(Box<Map>),
+    Map(Box<Map<'a>>),
     /// A meter to flush.
-    Meter(Meter),
+    Meter(Meter<'a>),
     /// Flush the live ruleset (i.e., remove all elements from live ruleset).
     Ruleset(Option<Ruleset>),
 }
@@ -153,11 +153,11 @@ pub enum FlushObject {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 /// This object describes a table.
-pub struct Table {
+pub struct Table<'a> {
     /// The table’s [family](NfFamily), e.g. "ip" or "ip6".
     pub family: NfFamily,
     /// The table’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The table’s handle.
     ///
@@ -167,7 +167,7 @@ pub struct Table {
 }
 
 /// Default table.
-impl Default for Table {
+impl Default for Table<'_> {
     fn default() -> Self {
         Table {
             family: DEFAULT_FAMILY,
@@ -179,16 +179,16 @@ impl Default for Table {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 /// This object describes a chain.
-pub struct Chain {
+pub struct Chain<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The chain’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// New name of the chain when supplied to the [rename command](NfCmd::Rename).
-    pub newname: Option<Cow<'static, str>>,
+    pub newname: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The chain’s handle.
     /// In input, it is used only in [delete command](NfCmd::Delete) as alternative to **name**.
@@ -216,7 +216,7 @@ pub struct Chain {
     /// Required for [base chains](Base chains).
     ///
     /// (Base chains): <https://wiki.nftables.org/wiki-nftables/index.php/Configuring_chains#Adding_base_chains>
-    pub dev: Option<Cow<'static, str>>,
+    pub dev: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The chain’s [policy](NfChainPolicy).
     /// Required for [base chains](Base chains).
@@ -226,7 +226,7 @@ pub struct Chain {
 }
 
 /// Default Chain.
-impl Default for Chain {
+impl Default for Chain<'_> {
     fn default() -> Self {
         Chain {
             family: DEFAULT_FAMILY,
@@ -248,17 +248,17 @@ impl Default for Chain {
 ///
 /// Basic building blocks of rules are statements.
 /// Each rule consists of at least one.
-pub struct Rule {
+pub struct Rule<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The chain’s name.
-    pub chain: Cow<'static, str>,
+    pub chain: Cow<'a, str>,
     /// An array of statements this rule consists of.
     ///
     /// In input, it is used in [add](NfCmd::Add)/[insert](NfCmd::Insert)/[replace](NfCmd::Replace) commands only.
-    pub expr: Cow<'static, [Statement]>,
+    pub expr: Cow<'a, [Statement<'a>]>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The rule’s handle.
     ///
@@ -272,17 +272,17 @@ pub struct Rule {
     pub index: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Optional rule comment.
-    pub comment: Option<Cow<'static, str>>,
+    pub comment: Option<Cow<'a, str>>,
 }
 
 /// Default rule with no expressions.
-impl Default for Rule {
+impl Default for Rule<'_> {
     fn default() -> Self {
         Rule {
             family: DEFAULT_FAMILY,
             table: DEFAULT_TABLE.into(),
             chain: DEFAULT_CHAIN.into(),
-            expr: Cow::Borrowed(&[][..]),
+            expr: [][..].into(),
             handle: None,
             index: None,
             comment: None,
@@ -292,13 +292,13 @@ impl Default for Rule {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 /// Named set that holds expression elements.
-pub struct Set {
+pub struct Set<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The set’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The set’s handle. For input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -306,7 +306,7 @@ pub struct Set {
     /// The set’s datatype.
     ///
     /// The set type might be a string, such as `"ipv4_addr"` or an array consisting of strings (for concatenated types).
-    pub set_type: SetTypeValue,
+    pub set_type: SetTypeValue<'a>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The set’s policy.
     pub policy: Option<SetPolicy>,
@@ -318,7 +318,7 @@ pub struct Set {
     ///
     /// A single set element might be given as string, integer or boolean value for simple cases. If additional properties are required, a formal elem object may be used.
     /// Multiple elements may be given in an array.
-    pub elem: Option<Cow<'static, [Expression]>>,
+    pub elem: Option<Cow<'a, [Expression<'a>]>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Element timeout in seconds.
     pub timeout: Option<u32>,
@@ -332,11 +332,11 @@ pub struct Set {
     /// Optional set comment.
     ///
     /// Set comment attribute requires at least nftables 0.9.7 and kernel 5.10
-    pub comment: Option<Cow<'static, str>>,
+    pub comment: Option<Cow<'a, str>>,
 }
 
 /// Default set `"myset"` with type `ipv4_addr`.
-impl Default for Set {
+impl Default for Set<'_> {
     fn default() -> Self {
         Set {
             family: DEFAULT_FAMILY,
@@ -358,13 +358,13 @@ impl Default for Set {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 /// Named map that holds expression elements.
 /// Maps are a special form of sets in that they translate a unique key to a value.
-pub struct Map {
+pub struct Map<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The map’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The map’s handle. For input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -373,9 +373,9 @@ pub struct Map {
     ///
     /// The set type might be a string, such as `"ipv4_addr"`` or an array
     /// consisting of strings (for concatenated types).
-    pub set_type: SetTypeValue,
+    pub set_type: SetTypeValue<'a>,
     /// Type of values this set maps to (i.e. this set is a map).
-    pub map: SetTypeValue,
+    pub map: SetTypeValue<'a>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The map’s policy.
     pub policy: Option<SetPolicy>,
@@ -387,7 +387,7 @@ pub struct Map {
     ///
     /// A single set element might be given as string, integer or boolean value for simple cases. If additional properties are required, a formal elem object may be used.
     /// Multiple elements may be given in an array.
-    pub elem: Option<Cow<'static, [Expression]>>,
+    pub elem: Option<Cow<'a, [Expression<'a>]>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Element timeout in seconds.
     pub timeout: Option<u32>,
@@ -401,11 +401,11 @@ pub struct Map {
     /// Optional map comment.
     ///
     /// The map/set comment attribute requires at least nftables 0.9.7 and kernel 5.10
-    pub comment: Option<Cow<'static, str>>,
+    pub comment: Option<Cow<'a, str>>,
 }
 
 /// Default map "mymap" that maps ipv4addrs.
-impl Default for Map {
+impl Default for Map<'_> {
     fn default() -> Self {
         Map {
             family: DEFAULT_FAMILY,
@@ -429,11 +429,11 @@ impl Default for Map {
 #[serde(untagged)]
 /// Wrapper for single or concatenated set types.
 /// The set type might be a string, such as `"ipv4_addr"` or an array consisting of strings (for concatenated types).
-pub enum SetTypeValue {
+pub enum SetTypeValue<'a> {
     /// Single set type.
     Single(SetType),
     /// Concatenated set types.
-    Concatenated(Cow<'static, [SetType]>),
+    Concatenated(Cow<'a, [SetType]>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, EnumString)]
@@ -507,27 +507,27 @@ pub enum SetOp {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 /// Manipulate element(s) in a named set.
-pub struct Element {
+pub struct Element<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The set’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     /// A single set element might be given as string, integer or boolean value for simple cases.
     /// If additional properties are required, a formal `elem` object may be used.
     /// Multiple elements may be given in an array.
-    pub elem: Cow<'static, [Expression]>,
+    pub elem: Cow<'a, [Expression<'a>]>,
 }
 
 /// Default manipulation element for [set](Set) "myset".
-impl Default for Element {
+impl Default for Element<'_> {
     fn default() -> Self {
         Element {
             family: DEFAULT_FAMILY,
             table: DEFAULT_TABLE.into(),
             name: "myset".into(),
-            elem: Cow::Borrowed(&[][..]),
+            elem: [][..].into(),
         }
     }
 }
@@ -537,13 +537,13 @@ impl Default for Element {
 /// by using a conntrack-based network stack bypass.
 ///
 /// [Flowtables]: https://wiki.nftables.org/wiki-nftables/index.php/Flowtables
-pub struct FlowTable {
+pub struct FlowTable<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The flow table’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The flow table’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -561,11 +561,11 @@ pub struct FlowTable {
     ///
     /// Devices are required for both traffic directions.
     /// Cow slice of device names, e.g. `vec!["wg0".into(), "wg1".into()].into()`.
-    pub dev: Option<Cow<'static, [Cow<'static, str>]>>,
+    pub dev: Option<Cow<'a, [Cow<'a, str>]>>,
 }
 
 /// Default [flowtable](FlowTable) named "myflowtable".
-impl Default for FlowTable {
+impl Default for FlowTable<'_> {
     fn default() -> Self {
         FlowTable {
             family: DEFAULT_FAMILY,
@@ -586,13 +586,13 @@ impl Default for FlowTable {
 /// With nftables you need to explicitly specify a counter for each rule you want to count.
 ///
 /// [counter]: https://wiki.nftables.org/wiki-nftables/index.php/Counters
-pub struct Counter {
+pub struct Counter<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The counter’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The counter’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -604,7 +604,7 @@ pub struct Counter {
 }
 
 /// Default [counter](Counter) named "mycounter".
-impl Default for Counter {
+impl Default for Counter<'_> {
     fn default() -> Self {
         Counter {
             family: DEFAULT_FAMILY,
@@ -629,13 +629,13 @@ impl Default for Counter {
 ///     * only after the byte count is over the threshold.
 ///
 /// (Quota): <https://wiki.nftables.org/wiki-nftables/index.php/Quotas>
-pub struct Quota {
+pub struct Quota<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The quota’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The quota’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -651,7 +651,7 @@ pub struct Quota {
 }
 
 /// Default [quota](Quota) named "myquota".
-impl Default for Quota {
+impl Default for Quota<'_> {
     fn default() -> Self {
         Quota {
             family: DEFAULT_FAMILY,
@@ -670,29 +670,29 @@ impl Default for Quota {
 /// Enable the specified [conntrack helper][Conntrack helpers] for this packet.
 ///
 /// [Conntrack helpers]: <https://wiki.nftables.org/wiki-nftables/index.php/Conntrack_helpers>
-pub struct CTHelper {
+pub struct CTHelper<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The ct helper’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct helper’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
     #[serde(rename = "type")]
     /// The ct helper type name, e.g. "ftp" or "tftp".
-    pub _type: Cow<'static, str>,
+    pub _type: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct helper’s layer 4 protocol.
-    pub protocol: Option<Cow<'static, str>>,
+    pub protocol: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct helper’s layer 3 protocol, e.g. "ip" or "ip6".
-    pub l3proto: Option<Cow<'static, str>>,
+    pub l3proto: Option<Cow<'a, str>>,
 }
 
 /// Default ftp [ct helper](CTHelper) named "mycthelper".
-impl Default for CTHelper {
+impl Default for CTHelper<'_> {
     fn default() -> Self {
         CTHelper {
             family: DEFAULT_FAMILY,
@@ -715,13 +715,13 @@ impl Default for CTHelper {
 ///
 /// (Limit): <https://wiki.nftables.org/wiki-nftables/index.php/Limits>
 /// (Token bucket): <https://en.wikipedia.org/wiki/Token_bucket>
-pub struct Limit {
+pub struct Limit<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
     /// The [table](Table)’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The limit’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The limit’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -744,7 +744,7 @@ pub struct Limit {
 }
 
 /// Default [limit](Limit) named "mylimit".
-impl Default for Limit {
+impl Default for Limit<'_> {
     fn default() -> Self {
         Limit {
             family: DEFAULT_FAMILY,
@@ -771,10 +771,10 @@ pub enum LimitUnit {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Meter {
-    pub name: Cow<'static, str>,
-    pub key: Expression,
-    pub stmt: Box<Statement>,
+pub struct Meter<'a> {
+    pub name: Cow<'a, str>,
+    pub key: Expression<'a>,
+    pub stmt: Box<Statement<'a>>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -792,13 +792,13 @@ impl Default for Ruleset {
 /// Library information in output.
 ///
 /// In output, the first object in an nftables array is a special one containing library information.
-pub struct MetainfoObject {
+pub struct MetainfoObject<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The value of version property is equal to the package version as printed by `nft -v`.
-    pub version: Option<Cow<'static, str>>,
+    pub version: Option<Cow<'a, str>>,
     /// The value of release_name property is equal to the release name as printed by `nft -v`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub release_name: Option<Cow<'static, str>>,
+    pub release_name: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The JSON Schema version.
     ///
@@ -811,7 +811,7 @@ pub struct MetainfoObject {
 }
 
 /// Default (empty) [metainfo object](MetainfoObject).
-impl Default for MetainfoObject {
+impl Default for MetainfoObject<'_> {
     fn default() -> Self {
         MetainfoObject {
             version: None,
@@ -827,13 +827,13 @@ impl Default for MetainfoObject {
 /// You can use a ct timeout object to specify a connection tracking timeout policy for a particular flow.
 ///
 /// [Ct timeout]: <https://wiki.nftables.org/wiki-nftables/index.php/Ct_timeout>
-pub struct CTTimeout {
+pub struct CTTimeout<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The ct timeout object’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct timeout object’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
@@ -842,17 +842,17 @@ pub struct CTTimeout {
     pub protocol: Option<CTHProto>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The connection state name, e.g. "established", "syn_sent", "close" or "close_wait", for which the timeout value has to be updated.
-    pub state: Option<Cow<'static, str>>,
+    pub state: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The updated timeout value for the specified connection state.
     pub value: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct timeout object’s layer 3 protocol, e.g. "ip" or "ip6".
-    pub l3proto: Option<Cow<'static, str>>,
+    pub l3proto: Option<Cow<'a, str>>,
 }
 
 /// Default [ct timeout](CTTimeout) named "mycttimeout"
-impl Default for CTTimeout {
+impl Default for CTTimeout<'_> {
     fn default() -> Self {
         CTTimeout {
             family: DEFAULT_FAMILY,
@@ -871,19 +871,19 @@ impl Default for CTTimeout {
 /// This object represents a named [conntrack expectation][Ct expectation].
 ///
 /// [Ct expectation]: <https://wiki.nftables.org/wiki-nftables/index.php/Ct_expectation>
-pub struct CTExpectation {
+pub struct CTExpectation<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The ct expectation object’s name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct expectation object’s handle. In input, it is used by delete command only.
     pub handle: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct expectation object’s layer 3 protocol, e.g. "ip" or "ip6".
-    pub l3proto: Option<Cow<'static, str>>,
+    pub l3proto: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct expectation object’s layer 4 protocol.
     pub protocol: Option<CTHProto>,
@@ -905,13 +905,13 @@ pub struct CTExpectation {
 ///
 /// [SynProxy]: https://wiki.nftables.org/wiki-nftables/index.php/Synproxy
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub struct SynProxy {
+pub struct SynProxy<'a> {
     /// The table’s family.
     pub family: NfFamily,
     /// The table’s name.
-    pub table: Cow<'static, str>,
+    pub table: Cow<'a, str>,
     /// The synproxy's name.
-    pub name: Cow<'static, str>,
+    pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The synproxy's handle. For input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
