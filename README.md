@@ -59,24 +59,26 @@ Check out the `tests/` directory for more usage examples.
 This example applies a ruleset that creates and deletes a table to nftables.
 
 ```rust
-use nft::{batch::Batch, helper, schema, types};
+use nftables::{batch::Batch, helper, schema, types};
 
 /// Applies a ruleset to nftables.
 fn test_apply_ruleset() {
     let ruleset = example_ruleset();
-    nft::helper::apply_ruleset(&ruleset, None, None).unwrap();
+    helper::apply_ruleset(&ruleset, None, None).unwrap();
 }
 
-fn example_ruleset() -> schema::Nftables {
+fn example_ruleset() -> schema::Nftables<'static> {
     let mut batch = Batch::new();
-    batch.add(schema::NfListObject::Table(schema::Table::new(
-        types::NfFamily::IP,
-        "test-table-01".to_string(),
-    )));
-    batch.delete(schema::NfListObject::Table(schema::Table::new(
-        types::NfFamily::IP,
-        "test-table-01".to_string(),
-    )));
+    batch.add(schema::NfListObject::Table(schema::Table {
+        family: types::NfFamily::IP,
+        name: "test-table-01".into(),
+        ..Default::default()
+    }));
+    batch.delete(schema::NfListObject::Table(schema::Table {
+        family: types::NfFamily::IP,
+        name: "test-table-01".into(),
+        ..Default::default()
+    }));
     batch.to_nftables()
 }
 ```
@@ -90,16 +92,16 @@ fn test_chain_table_rule_inet() {
     // nft add table inet some_inet_table
     // nft add chain inet some_inet_table some_inet_chain '{ type filter hook forward priority 0; policy accept; }'
     let expected: Nftables = Nftables {
-        objects: vec![
+        objects: Cow::Borrowed(&[
             NfObject::CmdObject(NfCmd::Add(NfListObject::Table(Table {
                 family: NfFamily::INet,
-                name: "some_inet_table".to_string(),
+                name: Cow::Borrowed("some_inet_table"),
                 handle: None,
             }))),
             NfObject::CmdObject(NfCmd::Add(NfListObject::Chain(Chain {
                 family: NfFamily::INet,
-                table: "some_inet_table".to_string(),
-                name: "some_inet_chain".to_string(),
+                table: Cow::Borrowed("some_inet_table"),
+                name: Cow::Borrowed("some_inet_chain"),
                 newname: None,
                 handle: None,
                 _type: Some(NfChainType::Filter),
@@ -108,7 +110,7 @@ fn test_chain_table_rule_inet() {
                 dev: None,
                 policy: Some(NfChainPolicy::Accept),
             }))),
-        ],
+        ]),
     };
     let json = json!({"nftables":[{"add":{"table":{"family":"inet","name":"some_inet_table"}}},{"add":{"chain":{"family":"inet","table":"some_inet_table","name":"some_inet_chain","type":"filter","hook":"forward","policy":"accept"}}}]});
     println!("{}", &json);
