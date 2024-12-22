@@ -44,7 +44,9 @@ jobs:
         with:
           components: clippy
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
+        run: |
+          cargo clippy --all-targets --features tokio
+          cargo clippy --all-targets --features async-process
   build:
     name: Rust Build & Test (Stable)
     runs-on: ubuntu-latest
