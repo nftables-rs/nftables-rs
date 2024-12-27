@@ -26,7 +26,7 @@ strum_macros = "0.26.4"
 thiserror = "2.0.9"
 
 [dev-dependencies]
-datatest-stable = "0.2.10"
+datatest-stable = "0.3.1"
 serial_test = "3.2.0"
 
 [[test]]
