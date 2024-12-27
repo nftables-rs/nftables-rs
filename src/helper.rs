@@ -1,5 +1,6 @@
 use std::string::FromUtf8Error;
 use std::{
+    ffi::{OsStr, OsString},
     io::{self, Write},
     process::{Command, Stdio},
 };
@@ -10,62 +11,67 @@ use crate::schema::Nftables;
 
 const NFT_EXECUTABLE: &str = "nft"; // search in PATH
 
+/// Use the default `nft` executable.
+pub const DEFAULT_NFT: Option<&str> = None;
+
+/// Do not use additional arguments to the `nft` executable.
+pub const DEFAULT_ARGS: Option<&[&str]> = None;
+
 #[derive(Error, Debug)]
 pub enum NftablesError {
-    #[error("unable to execute {program}: {inner}")]
-    NftExecution { program: String, inner: io::Error },
-    #[error("{program}'s output contained invalid utf8: {inner}")]
+    #[error("unable to execute {program:?}: {inner}")]
+    NftExecution { program: OsString, inner: io::Error },
+    #[error("{program:?}'s output contained invalid utf8: {inner}")]
     NftOutputEncoding {
-        program: String,
+        program: OsString,
         inner: FromUtf8Error,
     },
     #[error("got invalid json: {0}")]
     NftInvalidJson(serde_json::Error),
-    #[error("{program} did not return successfully while {hint}")]
+    #[error("{program:?} did not return successfully while {hint}")]
     NftFailed {
-        program: String,
+        program: OsString,
         hint: String,
         stdout: String,
         stderr: String,
     },
 }
 
-pub fn get_current_ruleset(
-    program: Option<&str>,
-    args: Option<&[&str]>,
+pub fn get_current_ruleset() -> Result<Nftables<'static>, NftablesError> {
+    get_current_ruleset_with_args(DEFAULT_NFT, DEFAULT_ARGS)
+}
+
+pub fn get_current_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
+    program: Option<P>,
+    args: Option<&[A]>,
 ) -> Result<Nftables<'static>, NftablesError> {
     let output = get_current_ruleset_raw(program, args)?;
     serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }
 
-pub fn get_current_ruleset_raw(
-    program: Option<&str>,
-    args: Option<&[&str]>,
+pub fn get_current_ruleset_raw<P: AsRef<OsStr>, A: AsRef<OsStr>>(
+    program: Option<P>,
+    args: Option<&[A]>,
 ) -> Result<String, NftablesError> {
     let mut nft_cmd = get_command(program);
-    let default_args = ["list", "ruleset"];
-    let args = match args {
-        Some(args) => args,
-        None => &default_args,
+    let nft_cmd = nft_cmd.arg("-j");
+    let nft_cmd = match args {
+        Some(args) => nft_cmd.args(args),
+        None => nft_cmd.args(["list", "ruleset"]),
     };
-    let program = nft_cmd.get_program().to_str().unwrap().to_string();
-    let process_result =
-        nft_cmd
-            .arg("-j")
-            .args(args)
-            .output()
-            .map_err(|e| NftablesError::NftExecution {
-                inner: e,
-                program: program.clone(),
-            })?;
+    let process_result = nft_cmd.output();
+    let process_result = process_result.map_err(|e| NftablesError::NftExecution {
+        inner: e,
+        program: nft_cmd.get_program().to_os_string(),
+    })?;
 
-    let stdout = read_output(&nft_cmd, process_result.stdout)?;
+    let stdout = read_output(nft_cmd, process_result.stdout)?;
 
     if !process_result.status.success() {
-        let stderr = read_output(&nft_cmd, process_result.stderr)?;
+        let stderr = read_output(nft_cmd, process_result.stderr)?;
 
         return Err(NftablesError::NftFailed {
-            program,
+            program: nft_cmd.get_program().to_os_string(),
             hint: "getting the current ruleset".to_string(),
             stdout,
             stderr,
@@ -74,39 +80,42 @@ pub fn get_current_ruleset_raw(
     Ok(stdout)
 }
 
-pub fn apply_ruleset(
+pub fn apply_ruleset(nftables: &Nftables) -> Result<(), NftablesError> {
+    apply_ruleset_with_args(nftables, DEFAULT_NFT, DEFAULT_ARGS)
+}
+
+pub fn apply_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     nftables: &Nftables,
-    program: Option<&str>,
-    args: Option<&[&str]>,
+    program: Option<P>,
+    args: Option<&[A]>,
 ) -> Result<(), NftablesError> {
     let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
     apply_ruleset_raw(&nftables, program, args)
 }
 
-pub fn apply_ruleset_raw(
+pub fn apply_ruleset_raw<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     payload: &str,
-    program: Option<&str>,
-    args: Option<&[&str]>,
+    program: Option<P>,
+    args: Option<&[A]>,
 ) -> Result<(), NftablesError> {
     let mut nft_cmd = get_command(program);
     let default_args = ["-j", "-f", "-"];
-    let program = nft_cmd.get_program().to_str().unwrap().to_string();
-    let mut process = nft_cmd
+    let process = nft_cmd
         .args(args.into_iter().flatten())
         .args(default_args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .spawn()
-        .map_err(|e| NftablesError::NftExecution {
-            program: program.clone(),
-            inner: e,
-        })?;
+        .spawn();
+    let mut process = process.map_err(|e| NftablesError::NftExecution {
+        program: nft_cmd.get_program().to_os_string(),
+        inner: e,
+    })?;
 
     let mut stdin = process.stdin.take().unwrap();
     stdin
         .write_all(payload.as_bytes())
         .map_err(|e| NftablesError::NftExecution {
-            program: program.clone(),
+            program: nft_cmd.get_program().to_os_string(),
             inner: e,
         })?;
     drop(stdin);
@@ -119,27 +128,29 @@ pub fn apply_ruleset_raw(
             let stderr = read_output(&nft_cmd, process_result.stderr)?;
 
             Err(NftablesError::NftFailed {
-                program,
+                program: nft_cmd.get_program().to_os_string(),
                 hint: "applying ruleset".to_string(),
                 stdout,
                 stderr,
             })
         }
         Err(e) => Err(NftablesError::NftExecution {
-            program: nft_cmd.get_program().to_str().unwrap().to_string(),
+            program: nft_cmd.get_program().to_os_string(),
             inner: e,
         }),
     }
 }
 
-fn get_command(program: Option<&str>) -> Command {
-    let nft_executable: &str = program.unwrap_or(NFT_EXECUTABLE);
-    Command::new(nft_executable)
+fn get_command<S: AsRef<OsStr>>(program: Option<S>) -> Command {
+    match program {
+        Some(program) => Command::new(program),
+        None => Command::new(NFT_EXECUTABLE),
+    }
 }
 
 fn read_output(cmd: &Command, bytes: Vec<u8>) -> Result<String, NftablesError> {
     String::from_utf8(bytes).map_err(|e| NftablesError::NftOutputEncoding {
         inner: e,
-        program: cmd.get_program().to_str().unwrap().to_string(),
+        program: cmd.get_program().to_os_string(),
     })
 }
