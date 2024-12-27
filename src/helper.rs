@@ -9,6 +9,7 @@ use thiserror::Error;
 
 use crate::schema::Nftables;
 
+/// Default `nft` executable.
 const NFT_EXECUTABLE: &str = "nft"; // search in PATH
 
 /// Use the default `nft` executable.
@@ -17,6 +18,7 @@ pub const DEFAULT_NFT: Option<&str> = None;
 /// Do not use additional arguments to the `nft` executable.
 pub const DEFAULT_ARGS: Option<&[&str]> = None;
 
+/// Error during `nft` execution.
 #[derive(Error, Debug)]
 pub enum NftablesError {
     #[error("unable to execute {program:?}: {inner}")]
@@ -37,10 +39,23 @@ pub enum NftablesError {
     },
 }
 
+/// Get the rule set that is currently active in the kernel.
+///
+/// This is done by calling the default `nft` executable with default arguments.
 pub fn get_current_ruleset() -> Result<Nftables<'static>, NftablesError> {
     get_current_ruleset_with_args(DEFAULT_NFT, DEFAULT_ARGS)
 }
 
+/// Get the current rule set by calling a custom `nft` with custom arguments.
+///
+/// If `program` is [Some], then this program will be called instead of the
+/// default `nft` executable.
+/// [DEFAULT_NFT] can be passed to call the default `nft`.
+///
+/// If `args` is [Some], then these `nft` arguments will be used instead of the
+/// default arguments `list` and `ruleset`.
+/// [DEFAULT_ARGS] can be passed to use the default arguments.
+/// Note that the argument `-j` is always added in front of `args`.
 pub fn get_current_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     program: Option<P>,
     args: Option<&[A]>,
@@ -49,6 +64,16 @@ pub fn get_current_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }
 
+/// Get the current raw rule set json by calling a custom `nft` with custom arguments.
+///
+/// If `program` is [Some], then this program will be called instead of the
+/// default `nft` executable.
+/// [DEFAULT_NFT] can be passed to call the default `nft`.
+///
+/// If `args` is [Some], then these `nft` arguments will be used instead of the
+/// default arguments `list` and `ruleset`.
+/// [DEFAULT_ARGS] can be passed to use the default arguments.
+/// Note that the argument `-j` is always added in front of `args`.
 pub fn get_current_ruleset_raw<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     program: Option<P>,
     args: Option<&[A]>,
@@ -80,10 +105,21 @@ pub fn get_current_ruleset_raw<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     Ok(stdout)
 }
 
+/// Apply the given rule set to the kernel.
+///
+/// This is done by calling the default `nft` executable with default arguments.
 pub fn apply_ruleset(nftables: &Nftables) -> Result<(), NftablesError> {
     apply_ruleset_with_args(nftables, DEFAULT_NFT, DEFAULT_ARGS)
 }
 
+/// Apply the given rule set by calling a custom `nft` with custom arguments.
+///
+/// If `program` is [Some], then this program will be called instead of the
+/// default `nft` executable.
+/// [DEFAULT_NFT] can be passed to call the default `nft`.
+///
+/// If `args` is [Some], then these `nft` arguments will be added in front of the
+/// other arguments `-j` and `-f -` that are always required internally.
 pub fn apply_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     nftables: &Nftables,
     program: Option<P>,
@@ -93,6 +129,14 @@ pub fn apply_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     apply_ruleset_raw(&nftables, program, args)
 }
 
+/// Apply the given raw rule set json by calling a custom `nft` with custom arguments.
+///
+/// If `program` is [Some], then this program will be called instead of the
+/// default `nft` executable.
+/// [DEFAULT_NFT] can be passed to call the default `nft`.
+///
+/// If `args` is [Some], then these `nft` arguments will be added in front of the
+/// other arguments `-j` and `-f -` that are always required internally.
 pub fn apply_ruleset_raw<P: AsRef<OsStr>, A: AsRef<OsStr>>(
     payload: &str,
     program: Option<P>,
