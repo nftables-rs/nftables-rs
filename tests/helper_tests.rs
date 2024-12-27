@@ -15,14 +15,14 @@ use serial_test::serial;
 /// Reads current ruleset from nftables and reads it to `Nftables` Rust struct.
 fn test_list_ruleset() {
     flush_ruleset().expect("failed to flush ruleset");
-    helper::get_current_ruleset(None, None).unwrap();
+    helper::get_current_ruleset().unwrap();
 }
 
 #[test]
 #[ignore]
 /// Attempts to read current ruleset from nftables using non-existing nft binary.
 fn test_list_ruleset_invalid_program() {
-    let result = helper::get_current_ruleset(Some("/dev/null/nft"), None);
+    let result = helper::get_current_ruleset_with_args(Some("/dev/null/nft"), helper::DEFAULT_ARGS);
     let err =
         result.expect_err("getting the current ruleset should fail with non-existing nft binary");
     assert!(matches!(err, NftablesError::NftExecution { .. }));
@@ -35,16 +35,16 @@ fn test_list_ruleset_invalid_program() {
 fn test_nft_args_list_map_set() {
     flush_ruleset().expect("failed to flush ruleset");
     let ruleset = example_ruleset(false);
-    nftables::helper::apply_ruleset(&ruleset, None, None).unwrap();
+    nftables::helper::apply_ruleset(&ruleset).unwrap();
     // nft should return two list object: metainfo and the set/map
-    let applied = helper::get_current_ruleset(
-        None,
+    let applied = helper::get_current_ruleset_with_args(
+        helper::DEFAULT_NFT,
         Some(&["list", "map", "ip", "test-table-01", "test_map"]),
     )
     .unwrap();
     assert_eq!(2, applied.objects.len());
-    let applied = helper::get_current_ruleset(
-        None,
+    let applied = helper::get_current_ruleset_with_args(
+        helper::DEFAULT_NFT,
         Some(&["list", "set", "ip", "test-table-01", "test_set"]),
     )
     .unwrap();
@@ -58,7 +58,7 @@ fn test_nft_args_list_map_set() {
 fn test_apply_ruleset() {
     flush_ruleset().expect("failed to flush ruleset");
     let ruleset = example_ruleset(true);
-    nftables::helper::apply_ruleset(&ruleset, None, None).unwrap();
+    nftables::helper::apply_ruleset(&ruleset).unwrap();
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn test_remove_unknown_table() {
     }));
     let ruleset = batch.to_nftables();
 
-    let result = nftables::helper::apply_ruleset(&ruleset, None, None);
+    let result = nftables::helper::apply_ruleset(&ruleset);
     let err = result.expect_err("Expecting nftables error for unknown table.");
     assert!(matches!(err, NftablesError::NftFailed { .. }));
 }
@@ -149,5 +149,5 @@ fn get_flush_ruleset() -> schema::Nftables<'static> {
 
 fn flush_ruleset() -> Result<(), NftablesError> {
     let ruleset = get_flush_ruleset();
-    nftables::helper::apply_ruleset(&ruleset, None, None)
+    nftables::helper::apply_ruleset(&ruleset)
 }
