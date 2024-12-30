@@ -64,7 +64,7 @@ use nftables::{batch::Batch, helper, schema, types};
 /// Applies a ruleset to nftables.
 fn test_apply_ruleset() {
     let ruleset = example_ruleset();
-    helper::apply_ruleset(&ruleset, None, None).unwrap();
+    helper::apply_ruleset(&ruleset).unwrap();
 }
 
 fn example_ruleset() -> schema::Nftables<'static> {
