@@ -16,7 +16,7 @@ const NFT_EXECUTABLE: &str = "nft"; // search in PATH
 pub const DEFAULT_NFT: Option<&str> = None;
 
 /// Do not use additional arguments to the `nft` executable.
-pub const DEFAULT_ARGS: Option<&[&str]> = None;
+pub const DEFAULT_ARGS: &[&str] = &[];
 
 /// Error during `nft` execution.
 #[derive(Error, Debug)]
@@ -52,14 +52,19 @@ pub fn get_current_ruleset() -> Result<Nftables<'static>, NftablesError> {
 /// default `nft` executable.
 /// [DEFAULT_NFT] can be passed to call the default `nft`.
 ///
-/// If `args` is [Some], then these `nft` arguments will be used instead of the
+/// If `args` is not empty, then these `nft` arguments will be used instead of the
 /// default arguments `list` and `ruleset`.
 /// [DEFAULT_ARGS] can be passed to use the default arguments.
 /// Note that the argument `-j` is always added in front of `args`.
-pub fn get_current_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
-    program: Option<P>,
-    args: Option<&[A]>,
-) -> Result<Nftables<'static>, NftablesError> {
+pub fn get_current_ruleset_with_args<'a, P, A, I>(
+    program: Option<&P>,
+    args: I,
+) -> Result<Nftables<'static>, NftablesError>
+where
+    P: AsRef<OsStr> + ?Sized,
+    A: AsRef<OsStr> + ?Sized + 'a,
+    I: IntoIterator<Item = &'a A> + 'a,
+{
     let output = get_current_ruleset_raw(program, args)?;
     serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }
@@ -70,18 +75,24 @@ pub fn get_current_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
 /// default `nft` executable.
 /// [DEFAULT_NFT] can be passed to call the default `nft`.
 ///
-/// If `args` is [Some], then these `nft` arguments will be used instead of the
+/// If `args` is not empty, then these `nft` arguments will be used instead of the
 /// default arguments `list` and `ruleset`.
 /// [DEFAULT_ARGS] can be passed to use the default arguments.
 /// Note that the argument `-j` is always added in front of `args`.
-pub fn get_current_ruleset_raw<P: AsRef<OsStr>, A: AsRef<OsStr>>(
-    program: Option<P>,
-    args: Option<&[A]>,
-) -> Result<String, NftablesError> {
+pub fn get_current_ruleset_raw<'a, P, A, I>(
+    program: Option<&P>,
+    args: I,
+) -> Result<String, NftablesError>
+where
+    P: AsRef<OsStr> + ?Sized,
+    A: AsRef<OsStr> + ?Sized + 'a,
+    I: IntoIterator<Item = &'a A> + 'a,
+{
     let mut nft_cmd = get_command(program);
     let nft_cmd = nft_cmd.arg("-j");
-    let nft_cmd = match args {
-        Some(args) => nft_cmd.args(args),
+    let mut args = args.into_iter();
+    let nft_cmd = match args.next() {
+        Some(arg) => nft_cmd.arg(arg).args(args),
         None => nft_cmd.args(["list", "ruleset"]),
     };
     let process_result = nft_cmd.output();
@@ -118,13 +129,18 @@ pub fn apply_ruleset(nftables: &Nftables) -> Result<(), NftablesError> {
 /// default `nft` executable.
 /// [DEFAULT_NFT] can be passed to call the default `nft`.
 ///
-/// If `args` is [Some], then these `nft` arguments will be added in front of the
+/// If `args` is not empty, then these `nft` arguments will be added in front of the
 /// other arguments `-j` and `-f -` that are always required internally.
-pub fn apply_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
+pub fn apply_ruleset_with_args<'a, P, A, I>(
     nftables: &Nftables,
-    program: Option<P>,
-    args: Option<&[A]>,
-) -> Result<(), NftablesError> {
+    program: Option<&P>,
+    args: I,
+) -> Result<(), NftablesError>
+where
+    P: AsRef<OsStr> + ?Sized,
+    A: AsRef<OsStr> + ?Sized + 'a,
+    I: IntoIterator<Item = &'a A> + 'a,
+{
     let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
     apply_ruleset_raw(&nftables, program, args)
 }
@@ -135,17 +151,22 @@ pub fn apply_ruleset_with_args<P: AsRef<OsStr>, A: AsRef<OsStr>>(
 /// default `nft` executable.
 /// [DEFAULT_NFT] can be passed to call the default `nft`.
 ///
-/// If `args` is [Some], then these `nft` arguments will be added in front of the
+/// If `args` is not empty, then these `nft` arguments will be added in front of the
 /// other arguments `-j` and `-f -` that are always required internally.
-pub fn apply_ruleset_raw<P: AsRef<OsStr>, A: AsRef<OsStr>>(
+pub fn apply_ruleset_raw<'a, P, A, I>(
     payload: &str,
-    program: Option<P>,
-    args: Option<&[A]>,
-) -> Result<(), NftablesError> {
+    program: Option<&P>,
+    args: I,
+) -> Result<(), NftablesError>
+where
+    P: AsRef<OsStr> + ?Sized,
+    A: AsRef<OsStr> + ?Sized + 'a,
+    I: IntoIterator<Item = &'a A> + 'a,
+{
     let mut nft_cmd = get_command(program);
     let default_args = ["-j", "-f", "-"];
     let process = nft_cmd
-        .args(args.into_iter().flatten())
+        .args(args)
         .args(default_args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
