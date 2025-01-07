@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/nftables-rs/nftables-rs/compare/v0.5.0...v0.6.0)
+
+### ⛰️ Features
+
+- *(expr)* [**breaking**] Make range fixed-sized array, not slice - ([1ce8021](https://github.com/nftables-rs/nftables-rs/commit/1ce80215bdf4d6ce0d42794127caa11d4b270626))
+- *(helper)* Generalize arguments - ([021668a](https://github.com/nftables-rs/nftables-rs/commit/021668a9231864d597b9165719df9830ca8b0c92))
+- *(helper)* [**breaking**] Make helper APIs accept borrowed values - ([091adb4](https://github.com/nftables-rs/nftables-rs/commit/091adb43134f523c4ae7276d59f87e55e3436d93))
+- [**breaking**] Replace Cow<'static, _> with 'a - ([c22a2a4](https://github.com/nftables-rs/nftables-rs/commit/c22a2a47d68888441028e4921711b72ac15aee2a))
+- [**breaking**] Reduce stack usage by selectively wrapping large values in Box - ([583b2d5](https://github.com/nftables-rs/nftables-rs/commit/583b2d58cb3a8d55a348752b7ef248a00df899bf))
+- [**breaking**] Use `Cow` whenever possible instead of owned values - ([8ddb5ff](https://github.com/nftables-rs/nftables-rs/commit/8ddb5ff132e757b95ac8b4cb8e05295f38a7098e))
+
+### 🐛 Bug Fixes
+
+- *(expr)* [**breaking**] Revert recursive Cow<[Expression]> back to Vec - ([75b7f48](https://github.com/nftables-rs/nftables-rs/commit/75b7f48795fe87857f2e9dfcd859eb5075de30ac))
+- *(stmt)* [**breaking**] Match anonymous and named quotas - ([61ba8ea](https://github.com/nftables-rs/nftables-rs/commit/61ba8eaec6502674104b77666dc89f8bc052e7ad))
+- *(tests)* Fix datatest_stable::harness macro usage - ([3948819](https://github.com/nftables-rs/nftables-rs/commit/3948819e109e4fe66ed1f7a954c9bd6d2f6530e6))
+
+### 📚 Documentation
+
+- *(readme)* Fix call to apply_ruleset() - ([210e4ee](https://github.com/nftables-rs/nftables-rs/commit/210e4ee7c3eafd265be7e997294ba68571732ecc))
+- *(readme)* Update examples - ([4857791](https://github.com/nftables-rs/nftables-rs/commit/48577917d67703819a9b73f3866df0bfaa3773eb))
+- Define msrv - ([dfc8517](https://github.com/nftables-rs/nftables-rs/commit/dfc8517372dd8360dac27fbf8859d32b2f8f8bad))
+
+### 🧪 Testing
+
+- *(deserialize)* Generate deserialize tests with harness - ([68332fd](https://github.com/nftables-rs/nftables-rs/commit/68332fd8dfe3d03921b8f0fad64a324ba4b6b326))
+
+
 ## [0.5.0](https://github.com/namib-project/nftables-rs/compare/v0.4.1...v0.5.0)
 
 This release completes documentation for `schema` and adds support for **tproxy**,
