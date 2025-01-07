@@ -77,3 +77,11 @@ jobs:
           toolchain: ${{ env.RUSTMSRV }}
       - name: Build
         run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+      - name: Run tests (with netns)
+        run: |
+          nft --version
+          cargo --config \
+            "target.'cfg(target_os = \"linux\")'.runner = 'unshare -rn'" \
+            test --verbose -- --ignored
