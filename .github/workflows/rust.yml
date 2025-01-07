@@ -12,7 +12,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
-  RUSTMSRV: "1.65"
+  RUSTMSRV: "1.76"
 
 jobs:
   commitlint:
