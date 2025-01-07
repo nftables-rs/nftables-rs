@@ -122,11 +122,17 @@ where
     Ok(stdout)
 }
 
+/// Get the rule set that is currently active in the kernel asynchronously.
+///
+/// See the synchronous [`get_current_ruleset`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
 pub async fn get_current_ruleset_async() -> Result<Nftables<'static>, NftablesError> {
     get_current_ruleset_with_args_async(DEFAULT_NFT, DEFAULT_ARGS).await
 }
 
+/// Get the current rule set asynchronously by calling a custom `nft` with custom arguments.
+///
+/// See the synchronous [`get_current_ruleset_with_args`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
 pub async fn get_current_ruleset_with_args_async<'a, P, A, I>(
     program: Option<&P>,
@@ -141,6 +147,9 @@ where
     serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }
 
+/// Get the current raw rule set json asynchronously by calling a custom `nft` with custom arguments.
+///
+/// See the synchronous [`get_current_ruleset_raw`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
 pub async fn get_current_ruleset_raw_async<'a, P, A, I>(
     program: Option<&P>,
@@ -280,11 +289,17 @@ where
     }
 }
 
+/// Apply the given rule set to the kernel asynchronously.
+///
+/// See the synchronous [`apply_ruleset`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
 pub async fn apply_ruleset_async(nftables: &Nftables<'_>) -> Result<(), NftablesError> {
     apply_ruleset_with_args_async(nftables, DEFAULT_NFT, DEFAULT_ARGS).await
 }
 
+/// Apply the given rule set asynchronously by calling a custom `nft` with custom arguments.
+///
+/// See the synchronous [`apply_ruleset_with_args`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
 pub async fn apply_ruleset_with_args_async<'a, P, A, I>(
     nftables: &Nftables<'_>,
@@ -300,6 +315,9 @@ where
     apply_ruleset_raw_async(&nftables, program, args).await
 }
 
+/// Apply the given raw rule set json asynchronously by calling a custom `nft` with custom arguments.
+///
+/// See the synchronous [`apply_ruleset_raw`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
 pub async fn apply_ruleset_raw_async<'a, P, A, I>(
     payload: &str,
