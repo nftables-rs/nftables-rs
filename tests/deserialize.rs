@@ -25,4 +25,6 @@ fn test_deserialize_json_files(path: &Path) -> datatest_stable::Result<()> {
     }
 }
 
-datatest_stable::harness!(test_deserialize_json_files, "resources/test/json", r"^.*/*",);
+datatest_stable::harness! {
+    {test = test_deserialize_json_files, root = "resources/test/json", pattern = r"^.*/*"},
+}
