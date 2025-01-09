@@ -7,9 +7,9 @@ table ip nat {
 		type nat hook prerouting priority 0; policy accept;
 	}
 
-	# for all packets to WAN, after routing, replace source address with primary IP of WAN interface
 	chain postrouting {
 		type nat hook postrouting priority 100; policy accept;
+		meta l4proto tcp ip daddr != 192.168.122.0/24 masquerade to :1024-65535
 		oifname "wan0" masquerade
 	}
 }

@@ -50,6 +50,54 @@
               "op": "==",
               "left": {
                 "meta": {
+                  "key": "l4proto"
+                }
+              },
+              "right": "tcp"
+            }
+          },
+          {
+            "match": {
+              "op": "!=",
+              "left": {
+                "payload": {
+                  "protocol": "ip",
+                  "field": "daddr"
+                }
+              },
+              "right": {
+                "prefix": {
+                  "addr": "192.168.122.0",
+                  "len": 24
+                }
+              }
+            }
+          },
+          {
+            "masquerade": {
+              "port": {
+                "range": [
+                  1024,
+                  65535
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "rule": {
+        "family": "ip",
+        "table": "nat",
+        "chain": "postrouting",
+        "handle": 4,
+        "expr": [
+          {
+            "match": {
+              "op": "==",
+              "left": {
+                "meta": {
                   "key": "oifname"
                 }
               },
