@@ -12,7 +12,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
-  RUSTMSRV: "1.76"
 
 jobs:
   commitlint:
@@ -48,39 +47,38 @@ jobs:
           cargo clippy --all-targets --features tokio
           cargo clippy --all-targets --features async-process
   build:
-    name: Rust Build & Test (Stable)
+    name: Rust Build & Test
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_version:
+          - { name: msrv, version: "1.76" }
+          - { name: stable, version: stable }
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-      - name: Build
-        run: cargo build --verbose
-      - name: Run tests
-        run: cargo test --verbose
-      - name: Run tests (with netns)
-        run: |
-          nft --version
-          cargo --config \
-            "target.'cfg(target_os = \"linux\")'.runner = 'unshare -rn'" \
-            test --verbose -- --ignored
-  build-msrv:
-    name: Rust Build (MSRV)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: Install Rust msrv (${{ env.RUSTMSRV }})
+      - name: Install Rust ${{ matrix.rust_version.name }} (${{ matrix.rust_version.version }})
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ env.RUSTMSRV }}
+          toolchain: ${{ matrix.rust_version.version }}
       - name: Build
         run: cargo build --verbose
       - name: Run tests
         run: cargo test --verbose
       - name: Run tests (with netns)
         run: |
+          CARGO_BIN=$(which cargo)
+          echo "abi <abi/4.0>,
+          include <tunables/global>
+
+          profile cargo $CARGO_BIN flags=(unconfined) {
+            userns,
+
+            # Site-specific additions and overrides. See local/README for details.
+            include if exists <local/cargo>
+          }" | sudo tee /etc/apparmor.d/cargo
+          sudo service apparmor reload
           nft --version
           cargo --config \
             "target.'cfg(target_os = \"linux\")'.runner = 'unshare -rn'" \
