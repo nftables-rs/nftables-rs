@@ -1,5 +1,26 @@
 FROM mcr.microsoft.com/devcontainers/rust:1-1-bookworm
 
-RUN apt-get update && apt-get -y install nftables \
+RUN apt-get update && apt-get -y install libgmp-dev libreadline-dev bison flex \
+    asciidoc-base libedit-dev libjansson-dev \
   && apt-get clean
 
+RUN git clone git://git.netfilter.org/libmnl /usr/src/libmnl \
+  && cd /usr/src/libmnl \
+  && sh autogen.sh \
+  && ./configure --prefix /usr \
+  && make \
+  && make install
+
+RUN git clone git://git.netfilter.org/libnftnl /usr/src/libnftnl \
+  && cd /usr/src/libnftnl \
+  && sh autogen.sh \
+  && ./configure --prefix /usr \
+  && make \
+  && make install
+
+RUN git clone git://git.netfilter.org/nftables /usr/src/nftables \
+  && cd /usr/src/nftables \
+  && sh autogen.sh \
+  && ./configure --with-json --prefix /usr \
+  && make \
+  && make install
