@@ -222,7 +222,41 @@ where
     I: IntoIterator<Item = &'a A> + 'a,
 {
     let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
-    apply_ruleset_raw(&nftables, program, args)
+    apply_ruleset_raw(&nftables, program, args)?;
+    Ok(())
+}
+
+/// Apply the given rule set to the kernel, and returns the processed rule set with
+/// extra information.
+///
+/// This is done by using `nft --echo`. One can get rule handles from the returned
+/// objects for future modifications, positional inserts, as well as removal.
+pub fn apply_and_return_ruleset(nftables: &Nftables) -> Result<Nftables<'static>, NftablesError> {
+    apply_and_return_ruleset_with_args(nftables, DEFAULT_NFT, DEFAULT_ARGS)
+}
+
+/// Apply the given rule set by calling a custom `nft` with custom arguments, and
+/// returns the processed rule set with extra information.
+///
+/// This is done by using `nft --echo`. One can get rule handles from the returned
+/// objects for future modifications, positional inserts, as well as removal.
+pub fn apply_and_return_ruleset_with_args<'a, P, A, I>(
+    nftables: &Nftables,
+    program: Option<&P>,
+    args: I,
+) -> Result<Nftables<'static>, NftablesError>
+where
+    P: AsRef<OsStr> + ?Sized,
+    A: AsRef<OsStr> + ?Sized + 'a,
+    I: IntoIterator<Item = &'a A> + 'a,
+{
+    let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
+    let args = args
+        .into_iter()
+        .map(AsRef::as_ref)
+        .chain(Some("--echo".as_ref()));
+    let output = apply_ruleset_raw(&nftables, program, args)?;
+    serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }
 
 /// Apply the given raw rule set json by calling a custom `nft` with custom arguments.
@@ -233,11 +267,13 @@ where
 ///
 /// If `args` is not empty, then these `nft` arguments will be added in front of the
 /// other arguments `-j` and `-f -` that are always required internally.
+///
+/// The command's stdout is returned as a [`String`].
 pub fn apply_ruleset_raw<'a, P, A, I>(
     payload: &str,
     program: Option<&P>,
     args: I,
-) -> Result<(), NftablesError>
+) -> Result<String, NftablesError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -270,7 +306,7 @@ where
 
     let result = process.wait_with_output();
     match result {
-        Ok(output) if output.status.success() => Ok(()),
+        Ok(output) if output.status.success() => read_output(program, output.stdout),
         Ok(process_result) => {
             let stdout = read_output(program, process_result.stdout)?;
             let stderr = read_output(program, process_result.stderr)?;
@@ -312,7 +348,43 @@ where
     I: IntoIterator<Item = &'a A> + 'a,
 {
     let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
-    apply_ruleset_raw_async(&nftables, program, args).await
+    apply_ruleset_raw_async(&nftables, program, args).await?;
+    Ok(())
+}
+
+/// Apply the given rule set to the kernel asynchronously, and returns the processed
+/// rule set with extra information.
+///
+/// See the synchronous [`apply_and_return_ruleset`] for more information.
+#[cfg(any(feature = "tokio", feature = "async-process"))]
+pub async fn apply_and_return_ruleset_async(
+    nftables: &Nftables<'_>,
+) -> Result<Nftables<'static>, NftablesError> {
+    apply_and_return_ruleset_with_args_async(nftables, DEFAULT_NFT, DEFAULT_ARGS).await
+}
+
+/// Apply the given rule set asynchronously by calling a custom `nft` with custom
+/// arguments, and returns the processed rule set with extra information.
+///
+/// See the synchronous [`apply_and_return_ruleset_with_args`] for more information.
+#[cfg(any(feature = "tokio", feature = "async-process"))]
+pub async fn apply_and_return_ruleset_with_args_async<'a, P, A, I>(
+    nftables: &Nftables<'_>,
+    program: Option<&P>,
+    args: I,
+) -> Result<Nftables<'static>, NftablesError>
+where
+    P: AsRef<OsStr> + ?Sized,
+    A: AsRef<OsStr> + ?Sized + 'a,
+    I: IntoIterator<Item = &'a A> + 'a,
+{
+    let nftables = serde_json::to_string(nftables).expect("failed to serialize Nftables struct");
+    let args = args
+        .into_iter()
+        .map(AsRef::as_ref)
+        .chain(Some("--echo".as_ref()));
+    let output = apply_ruleset_raw_async(&nftables, program, args).await?;
+    serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
 }
 
 /// Apply the given raw rule set json asynchronously by calling a custom `nft` with custom arguments.
@@ -323,7 +395,7 @@ pub async fn apply_ruleset_raw_async<'a, P, A, I>(
     payload: &str,
     program: Option<&P>,
     args: I,
-) -> Result<(), NftablesError>
+) -> Result<String, NftablesError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -369,7 +441,7 @@ where
     #[cfg(feature = "async-process")]
     let result = process.output().await;
     match result {
-        Ok(output) if output.status.success() => Ok(()),
+        Ok(output) if output.status.success() => read_output(program, output.stdout),
         Ok(process_result) => {
             let stdout = read_output(program, process_result.stdout)?;
             let stderr = read_output(program, process_result.stderr)?;
