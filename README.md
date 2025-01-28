@@ -17,7 +17,7 @@
   <!-- docs.io -->
   <a href="https://docs.rs/nftables/latest/nftables/"><img alt="rs" src="https://img.shields.io/badge/docs.rs-nftables-green.svg"></a>
   <!-- actions: rust -->
-  <a href="https://github.com/namib-project/nftables-rs/actions/workflows/rust.yml"><img alt="Actions Workflow Status" src="https://github.com/namib-project/nftables-rs/actions/workflows/rust.yml/badge.svg"></a>
+  <a href="https://github.com/nftables-rs/nftables-rs/actions/workflows/rust.yml"><img alt="Actions Workflow Status" src="https://github.com/nftables-rs/nftables-rs/actions/workflows/rust.yml/badge.svg"></a>
   <!-- license -->
   <a href="LICENSE-MIT"><img alt="License" src="https://img.shields.io/crates/l/nftables.svg"></a>
 </p>
@@ -35,7 +35,7 @@
 
 ## Motivation
 
-`nftables-rs` is a Rust library designed to provide a safe and easy-to-use abstraction over the nftables JSON API, known as libnftables-json. 
+`nftables-rs` is a Rust library designed to provide a safe and easy-to-use abstraction over the nftables JSON API, known as libnftables-json.
 
 This library is engineered for developers who need to interact with nftables, the Linux kernel's next-generation firewalling tool, directly from Rust applications.
 By abstracting the underlying JSON API, nftables-rs facilitates the creation, manipulation, and application of firewall rulesets without requiring deep knowledge of nftables' internal workings.
