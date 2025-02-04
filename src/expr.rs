@@ -1,9 +1,10 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet};
 
 use crate::stmt::{Counter, JumpTarget, Statement};
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 /// Expressions are the building blocks of (most) [statements](crate::stmt::Statement).
 /// In their most basic form, they are just immediate values represented as a
@@ -35,7 +36,7 @@ pub enum Expression<'a> {
     Verdict(Verdict<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Wrapper for non-immediate [Expressions](Expression).
 pub enum NamedExpression<'a> {
@@ -88,7 +89,7 @@ pub enum NamedExpression<'a> {
     Osf(Osf<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "map")]
 /// Map a key to a value.
 pub struct Map<'a> {
@@ -108,7 +109,7 @@ impl Default for Map<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 /// Item in an anonymous set.
 pub enum SetItem<'a> {
@@ -120,7 +121,7 @@ pub enum SetItem<'a> {
     MappingStatement(Expression<'a>, Statement<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "prefix")]
 /// Construct an IPv4 or IPv6 prefix consisting of address part in
 /// [addr](Prefix::addr) and prefix length in [len](Prefix::len).
@@ -131,7 +132,7 @@ pub struct Prefix<'a> {
     pub len: u32,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "range")]
 /// Construct a range of values.
 /// The first array item denotes the lower boundary, the second one the upper
@@ -144,7 +145,7 @@ pub struct Range<'a> {
     pub range: [Expression<'a>; 2],
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 /// Construct a payload expression, i.e. a reference to a certain part of packet
 /// data.
@@ -156,7 +157,7 @@ pub enum Payload<'a> {
     PayloadRaw(PayloadRaw),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Creates a raw payload expression to point at a random number
 /// ([len](PayloadRaw::len)) of bytes at a certain offset
 /// ([offset](PayloadRaw::offset)) from a given reference point
@@ -181,7 +182,7 @@ impl Default for PayloadRaw {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Construct a payload expression, i.e. a reference to a certain part of packet
 /// data.
 ///
@@ -204,7 +205,7 @@ impl Default for PayloadField<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents a protocol layer for [payload](Payload) references.
 pub enum PayloadBase {
@@ -222,7 +223,7 @@ pub enum PayloadBase {
     IH,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "exthdr")]
 /// Create a reference to a field ([field](Exthdr::field)) in an IPv6 extension
 /// header ([name](Exthdr::name)).
@@ -253,7 +254,7 @@ impl Default for Exthdr<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "tcp option")]
 /// Create a reference to a field ([field](TcpOption::field)) of a TCP option
 /// header ([name](TcpOption::field)).
@@ -279,7 +280,7 @@ impl Default for TcpOption<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "sctp chunk")]
 /// Create a reference to a field ([field](SctpChunk::field)) of an SCTP chunk
 /// ((name)[SctpChunk::name]).
@@ -295,7 +296,7 @@ pub struct SctpChunk<'a> {
     pub field: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "meta")]
 /// Create a reference to packet meta data.
 ///
@@ -315,7 +316,7 @@ impl Default for Meta {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents a `meta` key for packet meta data.
 ///
@@ -395,7 +396,7 @@ pub enum MetaKey {
     Nftrace,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "rt")]
 /// Create a reference to packet routing data.
 pub struct RT {
@@ -418,7 +419,7 @@ impl Default for RT {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents a key to reference to packet routing data.
 pub enum RTKey {
@@ -430,7 +431,7 @@ pub enum RTKey {
     MTU,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents a protocol family for use by the [rt](RT) expression.
 pub enum RTFamily {
@@ -440,7 +441,7 @@ pub enum RTFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "ct")]
 /// Create a reference to packet conntrack data.
 pub struct CT<'a> {
@@ -470,7 +471,7 @@ impl Default for CT<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents a protocol family for use by the [ct](CT) expression.
 pub enum CTFamily {
@@ -480,7 +481,7 @@ pub enum CTFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents a direction for use by the [ct](CT) expression.
 pub enum CTDir {
@@ -490,7 +491,7 @@ pub enum CTDir {
     Reply,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "numgen")]
 /// Create a number generator.
 pub struct Numgen {
@@ -516,7 +517,7 @@ impl Default for Numgen {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents a number generator mode.
 pub enum NgMode {
@@ -526,7 +527,7 @@ pub enum NgMode {
     Random,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "jhash")]
 /// Hash packet data (Jenkins Hash).
 pub struct JHash<'a> {
@@ -561,7 +562,7 @@ impl Default for JHash<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "symhash")]
 /// Hash packet data (Symmetric Hash).
 pub struct SymHash {
@@ -582,7 +583,7 @@ impl Default for SymHash {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "fib")]
 /// Perform kernel Forwarding Information Base lookups.
 pub struct Fib {
@@ -605,7 +606,7 @@ impl Default for Fib {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents which data is queried by [fib](Fib) lookup.
 pub enum FibResult {
@@ -617,7 +618,7 @@ pub enum FibResult {
     Type,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Represents flags for `fib` lookup.
 pub enum FibFlag {
@@ -633,7 +634,7 @@ pub enum FibFlag {
     Oif,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Represents a binary operation to be used in an `Expression`.
 pub enum BinaryOperation<'a> {
     #[serde(rename = "&")]
@@ -657,7 +658,7 @@ pub enum BinaryOperation<'a> {
     RSHIFT(Expression<'a>, Expression<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// A verdict expression (used in [verdict maps](crate::stmt::VerdictMap)).
 ///
@@ -702,7 +703,7 @@ pub enum Verdict<'a> {
     Goto(JumpTarget<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "elem")]
 /// Explicitly set element object.
 ///
@@ -737,7 +738,7 @@ impl Default for Elem<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "socket")]
 /// Construct a reference to packet’s socket.
 pub struct Socket<'a> {
@@ -754,7 +755,7 @@ impl Default for Socket<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// A [socket][Socket] attribute to match on.
 pub enum SocketAttr {
@@ -768,7 +769,7 @@ pub enum SocketAttr {
     Cgroupv2,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "osf")]
 /// Perform OS fingerprinting.
 ///
@@ -784,7 +785,7 @@ pub struct Osf<'a> {
     pub ttl: OsfTtl,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// TTL check mode for [osf](Osf).
 pub enum OsfTtl {
