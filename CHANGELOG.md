@@ -4,7 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/nftables-rs/nftables-rs/compare/v0.6.0...v0.6.1)
+
+This release adds the command `./nftables-rs schema <export-path>` to export a
+*JSON Schema* of our implementation of the nftables JSON API.
+
+### ⛰️ Features
+
+- *(cli)* Add json schema export using schemars - ([79fe2f8](https://github.com/nftables-rs/nftables-rs/commit/79fe2f81ad3ab4d48de5784289914707e608a4af))
+
+### 📚 Documentation
+
+- Update license-mit copyright owner - ([d90ddb9](https://github.com/nftables-rs/nftables-rs/commit/d90ddb9edb3f38ee30dbea050d55db3dff5b6a79))
+- Update new github org URL - ([95f1f68](https://github.com/nftables-rs/nftables-rs/commit/95f1f68ae246d87ed74872314ef08c931c68ce61))
+
+Thanks to @joelMuehlena for adding the JSON Schema export.
+
+
 ## [0.6.0](https://github.com/nftables-rs/nftables-rs/compare/v0.5.0...v0.6.0)
+
+This release includes memory optimizations, adds async helpers (optionally via tokio) and improves expressions documentation.
 
 ### ⛰️ Features
 
