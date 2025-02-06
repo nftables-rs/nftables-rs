@@ -1,3 +1,4 @@
+use schemars::JsonSchema;
 use std::{borrow::Cow, collections::HashSet};
 
 use crate::{
@@ -9,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use strum_macros::EnumString;
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// In general, any JSON input or output is enclosed in an object with a single property named **nftables**.
 ///
 /// See [libnftables-json global structure](Global Structure).
@@ -21,7 +22,7 @@ pub struct Nftables<'a> {
     pub objects: Cow<'a, [NfObject<'a>]>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 /// A [ruleset element](NfListObject) or [command](NfCmd) in an [nftables document](Nftables).
 pub enum NfObject<'a> {
@@ -31,7 +32,7 @@ pub enum NfObject<'a> {
     ListObject(NfListObject<'a>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// A ruleset element in an [nftables document](Nftables).
 pub enum NfListObject<'a> {
@@ -70,7 +71,7 @@ pub enum NfListObject<'a> {
     SynProxy(SynProxy<'a>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// A command is an object with a single property whose name identifies the command.
 ///
@@ -117,7 +118,7 @@ pub enum NfCmd<'a> {
     Rename(Chain<'a>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Reset state in suitable objects, i.e. zero their internal counter.
 pub enum ResetObject<'a> {
@@ -131,7 +132,7 @@ pub enum ResetObject<'a> {
     Quotas(Cow<'a, [Quota<'a>]>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Empty contents in given object, e.g. remove all chains from given table or remove all elements from given set.
 pub enum FlushObject<'a> {
@@ -151,7 +152,7 @@ pub enum FlushObject<'a> {
 
 // Ruleset Elements
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object describes a table.
 pub struct Table<'a> {
     /// The table’s [family](NfFamily), e.g. "ip" or "ip6".
@@ -177,7 +178,7 @@ impl Default for Table<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object describes a chain.
 pub struct Chain<'a> {
     /// The table’s family.
@@ -243,7 +244,7 @@ impl Default for Chain<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object describes a rule.
 ///
 /// Basic building blocks of rules are statements.
@@ -290,7 +291,7 @@ impl Default for Rule<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Named set that holds expression elements.
 pub struct Set<'a> {
     /// The table’s family.
@@ -355,7 +356,7 @@ impl Default for Set<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Named map that holds expression elements.
 /// Maps are a special form of sets in that they translate a unique key to a value.
 pub struct Map<'a> {
@@ -425,7 +426,7 @@ impl Default for Map<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 /// Wrapper for single or concatenated set types.
 /// The set type might be a string, such as `"ipv4_addr"` or an array consisting of strings (for concatenated types).
@@ -436,7 +437,9 @@ pub enum SetTypeValue<'a> {
     Concatenated(Cow<'a, [SetType]>),
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, EnumString)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, EnumString, JsonSchema,
+)]
 #[serde(rename_all = "lowercase")]
 /// Describes a set’s datatype.
 pub enum SetType {
@@ -470,7 +473,7 @@ pub enum SetType {
     Ifname,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Describes a set’s policy.
 pub enum SetPolicy {
@@ -480,7 +483,7 @@ pub enum SetPolicy {
     Memory,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Describes a [set](Set)’s flags.
 pub enum SetFlag {
@@ -495,7 +498,7 @@ pub enum SetFlag {
     Dynamic,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Describes an operator on set.
 pub enum SetOp {
@@ -505,7 +508,7 @@ pub enum SetOp {
     Update,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Manipulate element(s) in a named set.
 pub struct Element<'a> {
     /// The table’s family.
@@ -532,7 +535,7 @@ impl Default for Element<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// [Flowtables] allow you to accelerate packet forwarding in software (and in hardware if your NIC supports it)
 /// by using a conntrack-based network stack bypass.
 ///
@@ -579,7 +582,7 @@ impl Default for FlowTable<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object represents a named [counter].
 ///
 /// A counter counts both the total number of packets and the total bytes it has seen since it was last reset.
@@ -617,7 +620,7 @@ impl Default for Counter<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object represents a named [quota](Quota).
 ///
 /// A quota:
@@ -665,7 +668,7 @@ impl Default for Quota<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "ct helper")]
 /// Enable the specified [conntrack helper][Conntrack helpers] for this packet.
 ///
@@ -706,7 +709,7 @@ impl Default for CTHelper<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object represents a named [limit](Limit).
 ///
 /// A limit uses a [token bucket](Token bucket) filter to match packets:
@@ -760,7 +763,7 @@ impl Default for Limit<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// A unit used in [limits](Limit).
 pub enum LimitUnit {
@@ -770,14 +773,14 @@ pub enum LimitUnit {
     Bytes,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Meter<'a> {
     pub name: Cow<'a, str>,
     pub key: Expression<'a>,
     pub stmt: Box<Statement<'a>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Represents the live ruleset (to be [flushed](NfCmd::Flush)).
 pub struct Ruleset {}
 
@@ -788,7 +791,7 @@ impl Default for Ruleset {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Library information in output.
 ///
 /// In output, the first object in an nftables array is a special one containing library information.
@@ -821,7 +824,7 @@ impl Default for MetainfoObject<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object represents a named [conntrack timeout][Ct timeout] policy.
 ///
 /// You can use a ct timeout object to specify a connection tracking timeout policy for a particular flow.
@@ -867,7 +870,7 @@ impl Default for CTTimeout<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object represents a named [conntrack expectation][Ct expectation].
 ///
 /// [Ct expectation]: <https://wiki.nftables.org/wiki-nftables/index.php/Ct_expectation>
@@ -904,7 +907,7 @@ pub struct CTExpectation<'a> {
 /// Named SynProxy requires **nftables 0.9.3 or newer**.
 ///
 /// [SynProxy]: https://wiki.nftables.org/wiki-nftables/index.php/Synproxy
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct SynProxy<'a> {
     /// The table’s family.
     pub family: NfFamily,

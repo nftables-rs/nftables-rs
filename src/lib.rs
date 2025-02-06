@@ -37,6 +37,9 @@ pub mod helper;
 /// Contains node visitors for serde.
 pub mod visitor;
 
+/// Contains handling and parsing of command line arguments.
+pub mod cli;
+
 // Default values for Default implementations.
 const DEFAULT_FAMILY: types::NfFamily = types::NfFamily::INet;
 const DEFAULT_TABLE: &str = "filter";

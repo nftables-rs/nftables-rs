@@ -31,6 +31,8 @@
 
 - 📄 **JSON Parsing and Generation**: Offers detailed parsing and generation capabilities for nftables rulesets in JSON format, enabling seamless integration and manipulation of rulesets.
 
+- 💾 **JSON Schema generation for nftables**: Allows to create and export a JSON Schema for further usage derived from the explicit Rust types.
+
 - 💡 **Inspired by nftnl-rs**: While taking inspiration from [nftnl-rs](https://github.com/mullvad/nftnl-rs), `nftables-rs` focuses on utilizing the JSON API for broader accessibility and catering to diverse use cases.
 
 ## Motivation
@@ -117,6 +119,14 @@ fn test_chain_table_rule_inet() {
     let parsed: Nftables = serde_json::from_value(json).unwrap();
     assert_eq!(expected, parsed);
 }
+```
+
+### Export JSON Schema
+
+Export a JSON Schema to a file (if no path is set it defaults to `./nftables.schema.json`).
+
+```bash
+./nftables-rs schema <export-path | './nftables.schema.json'>
 ```
 
 ## MSRV (Minimum Supported Rust Version)

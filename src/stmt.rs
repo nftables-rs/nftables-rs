@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use strum_macros::EnumString;
@@ -10,7 +11,7 @@ use crate::visitor::single_string_to_option_hashset_logflag;
 use crate::expr::Expression;
 use std::borrow::Cow;
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
 /// Statements are the building blocks for rules. Each rule consists of at least one.
@@ -87,28 +88,28 @@ pub enum Statement<'a> {
     // TODO: secmark
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// `accept` verdict.
 pub struct Accept {}
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// `drop` verdict.
 pub struct Drop {}
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// `continue` verdict.
 pub struct Continue {}
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// `return` verdict.
 pub struct Return {}
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct JumpTarget<'a> {
     pub target: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This matches the expression on left hand side (typically a packet header or packet meta info) with the expression on right hand side (typically a constant value).
 ///
 /// If the statement evaluates to true, the next statement in this rule is considered.
@@ -122,7 +123,7 @@ pub struct Match<'a> {
     pub op: Operator,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 /// Anonymous or named Counter.
 pub enum Counter<'a> {
@@ -132,7 +133,7 @@ pub enum Counter<'a> {
     Anonymous(Option<AnonymousCounter>),
 }
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This object represents a byte/packet counter.
 /// In input, no properties are required.
 /// If given, they act as initial values for the counter.
@@ -145,7 +146,7 @@ pub struct AnonymousCounter {
     pub bytes: Option<usize>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// This changes the packet data or meta info.
 pub struct Mangle<'a> {
     /// The packet data to be changed, given as an `exthdr`, `payload`, `meta`, `ct` or `ct helper` expression.
@@ -154,7 +155,7 @@ pub struct Mangle<'a> {
     pub value: Expression<'a>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
 /// Represents an anonymous or named quota object.
 pub enum QuotaOrQuotaRef<'a> {
@@ -164,7 +165,7 @@ pub enum QuotaOrQuotaRef<'a> {
     QuotaRef(Cow<'a, str>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Creates an anonymous quota which lives in the rule it appears in.
 pub struct Quota<'a> {
     /// Quota value.
@@ -182,7 +183,7 @@ pub struct Quota<'a> {
     pub inv: Option<bool>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Creates an anonymous limit which lives in the rule it appears in.
 pub struct Limit<'a> {
     /// Rate value to limit to.
@@ -204,7 +205,7 @@ pub struct Limit<'a> {
     pub inv: Option<bool>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Forward a packet to a different destination.
 pub struct Flow<'a> {
     /// Operator on flow/set.
@@ -213,7 +214,7 @@ pub struct Flow<'a> {
     pub flowtable: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Forward a packet to a different destination.
 pub struct FWD<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -227,7 +228,7 @@ pub struct FWD<'a> {
     pub addr: Option<Expression<'a>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Protocol family for `FWD`.
 pub enum FWDFamily {
@@ -235,7 +236,7 @@ pub enum FWDFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Duplicate a packet to a different destination.
 pub struct Dup<'a> {
     /// Address to duplicate packet to.
@@ -245,7 +246,7 @@ pub struct Dup<'a> {
     pub dev: Option<Expression<'a>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Perform Network Address Translation.
 /// Referenced by `SNAT` and `DNAT` statements.
 pub struct NAT<'a> {
@@ -263,7 +264,7 @@ pub struct NAT<'a> {
     pub flags: Option<HashSet<NATFlag>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Protocol family for `NAT`.
 pub enum NATFamily {
@@ -271,7 +272,7 @@ pub enum NATFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Flags for `NAT`.
 pub enum NATFlag {
@@ -281,7 +282,7 @@ pub enum NATFlag {
     Persistent,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Reject the packet and send the given error reply.
 pub struct Reject {
     #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
@@ -298,7 +299,7 @@ impl Reject {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Types of `Reject`.
 pub enum RejectType {
@@ -309,7 +310,7 @@ pub enum RejectType {
     ICMPv6,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Dynamically add/update elements to a set.
 pub struct Set<'a> {
     /// Operator on set.
@@ -320,7 +321,7 @@ pub struct Set<'a> {
     pub set: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Operators on `Set`.
 pub enum SetOp {
@@ -328,7 +329,7 @@ pub enum SetOp {
     Update,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Log the packet.
 /// All properties are optional.
 pub struct Log<'a> {
@@ -374,7 +375,7 @@ impl Log<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Levels of `Log`.
 pub enum LogLevel {
@@ -389,7 +390,9 @@ pub enum LogLevel {
     Audit,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, EnumString)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, EnumString, JsonSchema,
+)]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 /// Flags of `Log`.
@@ -405,7 +408,7 @@ pub enum LogFlag {
     All,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Apply a given statement using a meter.
 pub struct Meter<'a> {
     /// Meter name.
@@ -418,7 +421,7 @@ pub struct Meter<'a> {
     pub stmt: Box<Statement<'a>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Queue the packet to userspace.
 pub struct Queue<'a> {
     /// Queue number.
@@ -429,7 +432,7 @@ pub struct Queue<'a> {
     pub flags: Option<HashSet<QueueFlag>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Flags of `Queue`.
 pub enum QueueFlag {
@@ -437,7 +440,7 @@ pub enum QueueFlag {
     Fanout,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "vmap")]
 /// Apply a verdict conditionally.
 pub struct VerdictMap<'a> {
@@ -448,7 +451,7 @@ pub struct VerdictMap<'a> {
     pub data: Expression<'a>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "ct count")]
 /// Limit the number of connections using conntrack.
 pub struct CTCount<'a> {
@@ -460,7 +463,7 @@ pub struct CTCount<'a> {
     pub inv: Option<bool>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Limit the number of connections using conntrack.
 ///
 /// Anonymous synproxy was requires **nftables 0.9.2 or newer**.
@@ -476,7 +479,7 @@ pub struct SynProxy {
     pub flags: Option<HashSet<SynProxyFlag>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 /// Redirects the packet to a local socket without changing the packet header in any way.
 pub struct TProxy<'a> {
@@ -487,7 +490,7 @@ pub struct TProxy<'a> {
     pub addr: Option<Cow<'a, str>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
 /// Represents an operator for `Match`.
 pub enum Operator {
     #[serde(rename = "&")]
