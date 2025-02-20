@@ -1,6 +1,6 @@
 [package]
 name = "nftables"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Jasper Wiegratz <wiegratz@uni-bremen.de>", "Jan Romann <jan.romann@uni-bremen.de>"]
 edition = "2021"
 rust-version = "1.76"
