@@ -68,17 +68,9 @@ jobs:
         run: cargo test --verbose
       - name: Run tests (with netns)
         run: |
-          CARGO_BIN=$(which cargo)
-          echo "abi <abi/4.0>,
-          include <tunables/global>
+          # enable user network ns on runner
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
-          profile cargo $CARGO_BIN flags=(unconfined) {
-            userns,
-
-            # Site-specific additions and overrides. See local/README for details.
-            include if exists <local/cargo>
-          }" | sudo tee /etc/apparmor.d/cargo
-          sudo service apparmor reload
           nft --version
           cargo --config \
             "target.'cfg(target_os = \"linux\")'.runner = 'unshare -rn'" \
