@@ -32,7 +32,7 @@ tokio = { version = "1.44.0", optional = true, features = ["process", "io-util"]
 [dev-dependencies]
 datatest-stable = "0.3.2"
 serial_test = "3.2.0"
-tempfile = "3.19.0"
+tempfile = "3.19.1"
 
 [[test]]
 name = "deserialize"
