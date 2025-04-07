@@ -27,7 +27,7 @@ serde_path_to_error = "0.1"
 strum = "0.27.1"
 strum_macros = "0.27.1"
 thiserror = "2.0.12"
-tokio = { version = "1.44.1", optional = true, features = ["process", "io-util"] }
+tokio = { version = "1.44.2", optional = true, features = ["process", "io-util"] }
 
 [dev-dependencies]
 datatest-stable = "0.3.2"
