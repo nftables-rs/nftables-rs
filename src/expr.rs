@@ -150,24 +150,24 @@ pub struct Range<'a> {
 /// Construct a payload expression, i.e. a reference to a certain part of packet
 /// data.
 pub enum Payload<'a> {
-    /// Creates a raw payload expression to point at a random number of bytes at
-    /// a certain offset from a given reference point.
-    PayloadField(PayloadField<'a>),
     /// Allows one to reference a field by name in a named packet header.
+    PayloadField(PayloadField<'a>),
+    /// Creates a raw payload expression to point at a random number of bits at
+    /// a certain offset from a given reference point.
     PayloadRaw(PayloadRaw),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 /// Creates a raw payload expression to point at a random number
-/// ([len](PayloadRaw::len)) of bytes at a certain offset
+/// ([len](PayloadRaw::len)) of bits at a certain offset
 /// ([offset](PayloadRaw::offset)) from a given reference point
 /// ([base](PayloadRaw::base)).
 pub struct PayloadRaw {
     /// The (protocol layer) reference point.
     pub base: PayloadBase,
-    /// Offset from the reference point.
+    /// Offset from the reference point in bits.
     pub offset: u32,
-    /// Number of bytes.
+    /// Number of bits.
     pub len: u32,
 }
 
