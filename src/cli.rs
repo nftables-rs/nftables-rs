@@ -47,7 +47,7 @@ fn deserialize_stdin() {
     let mut buffer = String::new();
 
     match io::stdin().read_to_string(&mut buffer) {
-        Err(error) => panic!("Problem opening the file: {:?}", error),
+        Err(error) => panic!("Problem opening the file: {error:?}"),
         Ok(_) => {
             println!("Document: {}", &buffer);
 
@@ -55,9 +55,9 @@ fn deserialize_stdin() {
             let result: Result<Nftables, _> = serde_path_to_error::deserialize(deserializer);
 
             match result {
-                Ok(_) => println!("Result: {:?}", result),
+                Ok(_) => println!("Result: {result:?}"),
                 Err(err) => {
-                    panic!("Deserialization error: {}", err);
+                    panic!("Deserialization error: {err}");
                 }
             }
         }

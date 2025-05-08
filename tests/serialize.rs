@@ -50,6 +50,6 @@ fn test_serialize() {
 
     let j = serde_json::to_string(&_a).unwrap();
     let result: Nftables = serde_json::from_str(&j).unwrap();
-    println!("JSON: {}", j);
-    println!("Parsed: {:?}", result);
+    println!("JSON: {j}");
+    println!("Parsed: {result:?}");
 }

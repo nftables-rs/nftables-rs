@@ -13,7 +13,7 @@ fn test_deserialize_json_files(path: &Path) -> datatest_stable::Result<()> {
 
     match result {
         Ok(nf) => {
-            println!("Deserialized document: {:?}", nf);
+            println!("Deserialized document: {nf:?}");
             Ok(())
         }
         Err(err) => Err(serde_json::error::Error::custom(format!(
