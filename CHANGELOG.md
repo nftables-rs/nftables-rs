@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/nftables-rs/nftables-rs/compare/v0.6.1...v0.6.2)
+
+### 🐛 Bug Fixes
+
+- Clippy string format lint - ([39b5796](https://github.com/nftables-rs/nftables-rs/commit/39b57961da47dd7dedb520b42f3a136e4d4ad1c9))
+
+### 📚 Documentation
+
+- *(expr)* Fix Payload docs - ([11f9657](https://github.com/nftables-rs/nftables-rs/commit/11f9657f42308c238fbbf76319c0956d24936b9c))
+
+
 ## [0.6.1](https://github.com/nftables-rs/nftables-rs/compare/v0.6.0...v0.6.1)
 
 This release adds the command `./nftables-rs schema <export-path>` to export a
