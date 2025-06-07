@@ -99,3 +99,15 @@ where
     }
     deserializer.deserialize_any(LogFlagSet(PhantomData))
 }
+
+/// Serialize an [Option] with [Option::None] value as `0`.
+pub fn serialize_none_to_zero<S, T>(x: &Option<T>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+    T: serde::Serialize,
+{
+    match x {
+        Some(v) => s.serialize_some(v),
+        None => s.serialize_some(&0_usize),
+    }
+}

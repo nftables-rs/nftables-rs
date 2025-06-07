@@ -4,8 +4,8 @@ use nftables::{
     batch::Batch,
     expr,
     helper::{self, NftablesError},
-    schema::{self, Table},
-    types,
+    schema::{self, Chain, Rule, Table},
+    stmt, types,
 };
 use serial_test::serial;
 
@@ -54,6 +54,54 @@ fn test_nft_args_list_map_set() {
 #[test]
 #[ignore]
 #[serial]
+/// Test that AnonymousCounter can be applied with [Option::None] values.
+fn test_regr_anoncounter_none() {
+    flush_ruleset().expect("failed to flush ruleset");
+    let mut batch = Batch::new();
+    // create table "test-table-02" and chain "test-chain-02".
+    let table_name: &'static str = "test-table-02";
+    batch.add(schema::NfListObject::Table(Table {
+        name: table_name.into(),
+        family: types::NfFamily::IP,
+        ..Table::default()
+    }));
+    batch.add(schema::NfListObject::Chain(Chain {
+        name: "test-chain-02".into(),
+        family: types::NfFamily::IP,
+        table: table_name.into(),
+        ..Chain::default()
+    }));
+    // create rule with multiple forms of [nftables::stmt::AnonymousCounter].
+    batch.add(schema::NfListObject::Rule(Rule {
+        chain: "test-chain-02".into(),
+        family: types::NfFamily::IP,
+        table: table_name.into(),
+        expr: [
+            stmt::Statement::Counter(nftables::stmt::Counter::Anonymous(Some(
+                nftables::stmt::AnonymousCounter {
+                    packets: None,
+                    bytes: None,
+                },
+            ))),
+            stmt::Statement::Counter(nftables::stmt::Counter::Anonymous(Some(
+                nftables::stmt::AnonymousCounter {
+                    packets: Some(0),
+                    bytes: Some(0),
+                },
+            ))),
+        ][..]
+            .into(),
+        ..Rule::default()
+    }));
+    let ruleset = batch.to_nftables();
+
+    let result = nftables::helper::apply_ruleset(&ruleset);
+    assert!(result.is_ok());
+}
+
+#[test]
+#[ignore]
+#[serial]
 /// Applies a ruleset to nftables.
 fn test_apply_ruleset() {
     flush_ruleset().expect("failed to flush ruleset");
@@ -83,7 +131,7 @@ fn test_remove_unknown_table() {
 fn example_ruleset(with_undo: bool) -> schema::Nftables<'static> {
     let mut batch = Batch::new();
     // create table "test-table-01"
-    let table_name = "test-table-01";
+    let table_name: &'static str = "test-table-01";
     batch.add(schema::NfListObject::Table(Table {
         name: table_name.into(),
         family: types::NfFamily::IP,
@@ -95,31 +143,17 @@ fn example_ruleset(with_undo: bool) -> schema::Nftables<'static> {
         family: types::NfFamily::IP,
         table: table_name.into(),
         name: set_name.into(),
-        handle: None,
         set_type: schema::SetTypeValue::Single(schema::SetType::Ipv4Addr),
-        policy: None,
-        flags: None,
-        elem: None,
-        timeout: None,
-        gc_interval: None,
-        size: None,
-        comment: None,
+        ..schema::Set::default()
     })));
     // create named map "test_map"
     batch.add(schema::NfListObject::Map(Box::new(schema::Map {
         family: types::NfFamily::IP,
         table: table_name.into(),
         name: "test_map".into(),
-        handle: None,
         map: schema::SetTypeValue::Single(schema::SetType::EtherAddr),
         set_type: schema::SetTypeValue::Single(schema::SetType::Ipv4Addr),
-        policy: None,
-        flags: None,
-        elem: None,
-        timeout: None,
-        gc_interval: None,
-        size: None,
-        comment: None,
+        ..schema::Map::default()
     })));
     // add element to set
     batch.add(schema::NfListObject::Element(schema::Element {

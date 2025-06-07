@@ -138,11 +138,11 @@ pub enum Counter<'a> {
 /// In input, no properties are required.
 /// If given, they act as initial values for the counter.
 pub struct AnonymousCounter {
-    #[serde(skip_serializing_if = "Option::is_none")]
     /// Packets counted.
+    #[serde(serialize_with = "crate::visitor::serialize_none_to_zero")]
     pub packets: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     /// Bytes counted.
+    #[serde(serialize_with = "crate::visitor::serialize_none_to_zero")]
     pub bytes: Option<usize>,
 }
 
