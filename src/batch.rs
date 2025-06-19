@@ -1,25 +1,15 @@
+use derive_new::new;
 use serde::{Deserialize, Serialize};
 
 use crate::schema::{NfCmd, NfListObject, NfObject, Nftables};
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, Default, new)]
 /// Batch manages nftables objects and is used to prepare an nftables payload.
 pub struct Batch<'a> {
     data: Vec<NfObject<'a>>,
 }
 
-impl Default for Batch<'_> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<'a> Batch<'a> {
-    /// Creates an empty Batch instance.
-    pub fn new() -> Batch<'a> {
-        Batch { data: Vec::new() }
-    }
-
     /// Adds object with `add` command to Batch.
     pub fn add(&mut self, obj: NfListObject<'a>) {
         self.data.push(NfObject::CmdObject(NfCmd::Add(obj)))

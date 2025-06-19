@@ -3,7 +3,7 @@ use std::{borrow::Cow, vec};
 use nftables::{
     batch::Batch,
     expr,
-    helper::{self, NftablesError},
+    helper::{self, NftExecutableError},
     schema::{self, Table},
     types,
 };
@@ -25,7 +25,7 @@ fn test_list_ruleset_invalid_program() {
     let result = helper::get_current_ruleset_with_args(Some("/dev/null/nft"), helper::DEFAULT_ARGS);
     let err =
         result.expect_err("getting the current ruleset should fail with non-existing nft binary");
-    assert!(matches!(err, NftablesError::NftExecution { .. }));
+    assert!(matches!(err, NftExecutableError::NftExecution { .. }));
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn test_apply_ruleset() {
 /// Attempts to delete an unknown table, expecting an error.
 fn test_remove_unknown_table() {
     flush_ruleset().expect("failed to flush ruleset");
-    let mut batch = Batch::new();
+    let mut batch = Batch::default();
     batch.delete(schema::NfListObject::Table(schema::Table {
         family: types::NfFamily::IP6,
         name: "i-do-not-exist".into(),
@@ -77,11 +77,11 @@ fn test_remove_unknown_table() {
 
     let result = nftables::helper::apply_ruleset(&ruleset);
     let err = result.expect_err("Expecting nftables error for unknown table.");
-    assert!(matches!(err, NftablesError::NftFailed { .. }));
+    assert!(matches!(err, NftExecutableError::NftFailed { .. }));
 }
 
 fn example_ruleset(with_undo: bool) -> schema::Nftables<'static> {
-    let mut batch = Batch::new();
+    let mut batch = Batch::default();
     // create table "test-table-01"
     let table_name = "test-table-01";
     batch.add(schema::NfListObject::Table(Table {
@@ -142,12 +142,12 @@ fn example_ruleset(with_undo: bool) -> schema::Nftables<'static> {
 }
 
 fn get_flush_ruleset() -> schema::Nftables<'static> {
-    let mut batch = Batch::new();
+    let mut batch = Batch::default();
     batch.add_cmd(schema::NfCmd::Flush(schema::FlushObject::Ruleset(None)));
     batch.to_nftables()
 }
 
-fn flush_ruleset() -> Result<(), NftablesError> {
+fn flush_ruleset() -> Result<(), NftExecutableError> {
     let ruleset = get_flush_ruleset();
     nftables::helper::apply_ruleset(&ruleset)
 }

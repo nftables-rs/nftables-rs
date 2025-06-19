@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use derive_builder::Builder;
+use derive_new::new;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -8,10 +10,10 @@ use strum_macros::EnumString;
 use crate::types::{RejectCode, SynProxyFlag};
 use crate::visitor::single_string_to_option_hashset_logflag;
 
-use crate::expr::Expression;
+use crate::{expr::Expression, error::NftablesError};
 use std::borrow::Cow;
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
 /// Statements are the building blocks for rules. Each rule consists of at least one.
@@ -58,7 +60,7 @@ pub enum Statement<'a> {
 
     #[serde(rename = "ct helper")]
     /// Enable the specified conntrack helper for this packet.
-    CTHelper(Cow<'a, str>), // CT helper reference.
+    CTHelper(#[new(into)] Cow<'a, str>), // CT helper reference.
 
     Meter(Meter<'a>),
     Queue(Queue<'a>),
@@ -104,12 +106,15 @@ pub struct Continue {}
 /// `return` verdict.
 pub struct Return {}
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 pub struct JumpTarget<'a> {
+    #[new(into)]
     pub target: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// This matches the expression on left hand side (typically a packet header or packet meta info) with the expression on right hand side (typically a constant value).
 ///
 /// If the statement evaluates to true, the next statement in this rule is considered.
@@ -123,17 +128,18 @@ pub struct Match<'a> {
     pub op: Operator,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
 /// Anonymous or named Counter.
 pub enum Counter<'a> {
     /// A counter referenced by name.
-    Named(Cow<'a, str>),
+    Named(#[new(into)] Cow<'a, str>),
     /// An anonymous counter.
     Anonymous(Option<AnonymousCounter>),
 }
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// This object represents a byte/packet counter.
 /// In input, no properties are required.
 /// If given, they act as initial values for the counter.
@@ -146,7 +152,8 @@ pub struct AnonymousCounter {
     pub bytes: Option<usize>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// This changes the packet data or meta info.
 pub struct Mangle<'a> {
     /// The packet data to be changed, given as an `exthdr`, `payload`, `meta`, `ct` or `ct helper` expression.
@@ -155,21 +162,23 @@ pub struct Mangle<'a> {
     pub value: Expression<'a>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
 /// Represents an anonymous or named quota object.
 pub enum QuotaOrQuotaRef<'a> {
     /// Anonymous quota object.
     Quota(Quota<'a>),
     /// Reference to a named quota object.
-    QuotaRef(Cow<'a, str>),
+    QuotaRef(#[new(into)] Cow<'a, str>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Creates an anonymous quota which lives in the rule it appears in.
 pub struct Quota<'a> {
     /// Quota value.
     pub val: u32,
+    #[new(into)]
     /// Unit of `val`, e.g. `"kbytes"` or `"mbytes"`. If omitted, defaults to `"bytes"`.
     pub val_unit: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -183,7 +192,8 @@ pub struct Quota<'a> {
     pub inv: Option<bool>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Creates an anonymous limit which lives in the rule it appears in.
 pub struct Limit<'a> {
     /// Rate value to limit to.
@@ -205,16 +215,19 @@ pub struct Limit<'a> {
     pub inv: Option<bool>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Forward a packet to a different destination.
 pub struct Flow<'a> {
     /// Operator on flow/set.
     pub op: SetOp,
+    #[new(into)]
     /// The [flow table][crate::schema::FlowTable]'s name.
     pub flowtable: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Forward a packet to a different destination.
 pub struct FWD<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -228,7 +241,7 @@ pub struct FWD<'a> {
     pub addr: Option<Expression<'a>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Protocol family for `FWD`.
 pub enum FWDFamily {
@@ -236,7 +249,8 @@ pub enum FWDFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Duplicate a packet to a different destination.
 pub struct Dup<'a> {
     /// Address to duplicate packet to.
@@ -246,7 +260,8 @@ pub struct Dup<'a> {
     pub dev: Option<Expression<'a>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Perform Network Address Translation.
 /// Referenced by `SNAT` and `DNAT` statements.
 pub struct NAT<'a> {
@@ -264,7 +279,7 @@ pub struct NAT<'a> {
     pub flags: Option<HashSet<NATFlag>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Protocol family for `NAT`.
 pub enum NATFamily {
@@ -272,7 +287,7 @@ pub enum NATFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Flags for `NAT`.
 pub enum NATFlag {
@@ -282,7 +297,8 @@ pub enum NATFlag {
     Persistent,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Reject the packet and send the given error reply.
 pub struct Reject {
     #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
@@ -293,13 +309,7 @@ pub struct Reject {
     pub expr: Option<RejectCode>,
 }
 
-impl Reject {
-    pub fn new(_type: Option<RejectType>, code: Option<RejectCode>) -> Reject {
-        Reject { _type, expr: code }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Types of `Reject`.
 pub enum RejectType {
@@ -310,18 +320,20 @@ pub enum RejectType {
     ICMPv6,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Dynamically add/update elements to a set.
 pub struct Set<'a> {
     /// Operator on set.
     pub op: SetOp,
     /// Set element to add or update.
     pub elem: Expression<'a>,
+    #[new(into)]
     /// Set reference.
     pub set: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Operators on `Set`.
 pub enum SetOp {
@@ -329,7 +341,8 @@ pub enum SetOp {
     Update,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Log the packet.
 /// All properties are optional.
 pub struct Log<'a> {
@@ -362,20 +375,7 @@ pub struct Log<'a> {
     pub flags: Option<HashSet<LogFlag>>,
 }
 
-impl Log<'_> {
-    pub fn new(group: Option<u32>) -> Self {
-        Log {
-            prefix: None,
-            group,
-            snaplen: None,
-            queue_threshold: None,
-            level: None,
-            flags: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Levels of `Log`.
 pub enum LogLevel {
@@ -408,12 +408,15 @@ pub enum LogFlag {
     All,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Apply a given statement using a meter.
 pub struct Meter<'a> {
+    #[new(into)]
     /// Meter name.
     pub name: Cow<'a, str>,
 
+    #[new(into)]
     /// Meter key.
     pub key: Expression<'a>,
 
@@ -421,7 +424,8 @@ pub struct Meter<'a> {
     pub stmt: Box<Statement<'a>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Queue the packet to userspace.
 pub struct Queue<'a> {
     /// Queue number.
@@ -432,7 +436,7 @@ pub struct Queue<'a> {
     pub flags: Option<HashSet<QueueFlag>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Flags of `Queue`.
 pub enum QueueFlag {
@@ -440,7 +444,8 @@ pub enum QueueFlag {
     Fanout,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "vmap")]
 /// Apply a verdict conditionally.
 pub struct VerdictMap<'a> {
@@ -451,7 +456,8 @@ pub struct VerdictMap<'a> {
     pub data: Expression<'a>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "ct count")]
 /// Limit the number of connections using conntrack.
 pub struct CTCount<'a> {
@@ -463,7 +469,8 @@ pub struct CTCount<'a> {
     pub inv: Option<bool>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Limit the number of connections using conntrack.
 ///
 /// Anonymous synproxy was requires **nftables 0.9.2 or newer**.
@@ -479,7 +486,8 @@ pub struct SynProxy {
     pub flags: Option<HashSet<SynProxyFlag>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename_all = "lowercase")]
 /// Redirects the packet to a local socket without changing the packet header in any way.
 pub struct TProxy<'a> {
@@ -490,7 +498,7 @@ pub struct TProxy<'a> {
     pub addr: Option<Cow<'a, str>>,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 /// Represents an operator for `Match`.
 pub enum Operator {
     #[serde(rename = "&")]
