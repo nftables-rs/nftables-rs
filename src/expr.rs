@@ -92,6 +92,12 @@ pub enum NamedExpression<'a> {
     Osf(Osf<'a>),
 }
 
+impl From<NamedExpression<'static>> for Expression<'static> {
+    fn from(named_expr: NamedExpression<'static>) -> Self {
+        Expression::new_named(named_expr)
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "map")]
