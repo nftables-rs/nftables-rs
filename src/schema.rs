@@ -14,6 +14,7 @@ use strum_macros::EnumString;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// In general, any JSON input or output is enclosed in an object with a single property named **nftables**.
 ///
 /// See [libnftables-json global structure](Global Structure).
@@ -158,6 +159,7 @@ pub enum FlushObject<'a> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object describes a table.
 pub struct Table<'a> {
     /// The table’s [family](NfFamily), e.g. "ip" or "ip6".
@@ -186,6 +188,7 @@ impl Default for Table<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object describes a chain.
 pub struct Chain<'a> {
     /// The table’s family.
@@ -257,6 +260,7 @@ impl Default for Chain<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object describes a rule.
 ///
 /// Basic building blocks of rules are statements.
@@ -309,6 +313,7 @@ impl Default for Rule<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Named set that holds expression elements.
 pub struct Set<'a> {
     /// The table’s family.
@@ -379,6 +384,7 @@ impl Default for Set<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Named map that holds expression elements.
 /// Maps are a special form of sets in that they translate a unique key to a value.
 pub struct Map<'a> {
@@ -536,6 +542,7 @@ pub enum SetOp {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Manipulate element(s) in a named set.
 pub struct Element<'a> {
     /// The table’s family.
@@ -567,6 +574,7 @@ impl Default for Element<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// [Flowtables] allow you to accelerate packet forwarding in software (and in hardware if your NIC supports it)
 /// by using a conntrack-based network stack bypass.
 ///
@@ -618,6 +626,7 @@ impl Default for FlowTable<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [counter].
 ///
 /// A counter counts both the total number of packets and the total bytes it has seen since it was last reset.
@@ -659,6 +668,7 @@ impl Default for Counter<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [quota](Quota).
 ///
 /// A quota:
@@ -711,6 +721,7 @@ impl Default for Quota<'_> {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "ct helper")]
+#[allow(clippy::too_many_arguments)]
 /// Enable the specified [conntrack helper][Conntrack helpers] for this packet.
 ///
 /// [Conntrack helpers]: <https://wiki.nftables.org/wiki-nftables/index.php/Conntrack_helpers>
@@ -757,6 +768,7 @@ impl Default for CTHelper<'_> {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [limit](Limit).
 ///
 /// A limit uses a [token bucket](Token bucket) filter to match packets:
@@ -818,7 +830,8 @@ impl Default for Limit<'_> {
 pub enum LimitUnit {
     /// Limit by number of packets.
     Packets,
-    /// Limit by number of bytes.
+
+   #[allow(clippy::too_many_arguments)] /// Limit by number of bytes.
     Bytes,
 }
 
@@ -833,6 +846,7 @@ pub struct Meter<'a> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Represents the live ruleset (to be [flushed](NfCmd::Flush)).
 pub struct Ruleset {}
 
@@ -845,6 +859,7 @@ impl Default for Ruleset {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Library information in output.
 ///
 /// In output, the first object in an nftables array is a special one containing library information.
@@ -881,6 +896,7 @@ impl Default for MetainfoObject<'_> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [conntrack timeout][Ct timeout] policy.
 ///
 /// You can use a ct timeout object to specify a connection tracking timeout policy for a particular flow.
@@ -932,6 +948,7 @@ impl Default for CTTimeout<'_> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [conntrack expectation][Ct expectation].
 ///
 /// [Ct expectation]: <https://wiki.nftables.org/wiki-nftables/index.php/Ct_expectation>
@@ -965,6 +982,7 @@ pub struct CTExpectation<'a> {
     pub size: Option<u32>,
 }
 
+#[allow(clippy::too_many_arguments)]
 /// [SynProxy] intercepts new TCP connections and handles the initial 3-way handshake using
 /// syncookies instead of conntrack to establish the connection.
 ///
