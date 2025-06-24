@@ -10,7 +10,7 @@ use strum_macros::EnumString;
 use crate::types::{RejectCode, SynProxyFlag};
 use crate::visitor::single_string_to_option_hashset_logflag;
 
-use crate::{expr::Expression, error::NftablesError};
+use crate::{error::NftablesError, expr::Expression};
 use std::borrow::Cow;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
@@ -138,7 +138,9 @@ pub enum Counter<'a> {
     Anonymous(Option<AnonymousCounter>),
 }
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[derive(
+    Debug, Default, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new,
+)]
 #[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// This object represents a byte/packet counter.
 /// In input, no properties are required.

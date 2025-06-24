@@ -231,7 +231,9 @@ where
 ///
 /// This is done by using `nft --echo`. One can get rule handles from the returned
 /// objects for future modifications, positional inserts, as well as removal.
-pub fn apply_and_return_ruleset(nftables: &Nftables) -> Result<Nftables<'static>, NftExecutableError> {
+pub fn apply_and_return_ruleset(
+    nftables: &Nftables,
+) -> Result<Nftables<'static>, NftExecutableError> {
     apply_and_return_ruleset_with_args(nftables, DEFAULT_NFT, DEFAULT_ARGS)
 }
 

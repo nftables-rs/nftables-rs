@@ -4,8 +4,8 @@ use schemars::JsonSchema;
 use std::{borrow::Cow, collections::HashSet};
 
 use crate::{
-    expr::Expression, stmt::Statement, types::*, visitor::single_string_to_option_vec, error::NftablesError,
-    DEFAULT_CHAIN, DEFAULT_FAMILY, DEFAULT_TABLE,
+    error::NftablesError, expr::Expression, stmt::Statement, types::*,
+    visitor::single_string_to_option_vec, DEFAULT_CHAIN, DEFAULT_FAMILY, DEFAULT_TABLE,
 };
 
 use serde::{Deserialize, Serialize};

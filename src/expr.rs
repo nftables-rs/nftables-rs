@@ -4,7 +4,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet};
 
-use crate::{stmt::{Counter, JumpTarget, Statement}, error::NftablesError};
+use crate::{
+    error::NftablesError,
+    stmt::{Counter, JumpTarget, Statement},
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
