@@ -1,28 +1,33 @@
+use derive_builder::Builder;
+use derive_new::new;
 use schemars::JsonSchema;
 use std::{borrow::Cow, collections::HashSet};
 
 use crate::{
-    expr::Expression, stmt::Statement, types::*, visitor::single_string_to_option_vec,
-    DEFAULT_CHAIN, DEFAULT_FAMILY, DEFAULT_TABLE,
+    error::NftablesError, expr::Expression, stmt::Statement, types::*,
+    visitor::single_string_to_option_vec, DEFAULT_CHAIN, DEFAULT_FAMILY, DEFAULT_TABLE,
 };
 
 use serde::{Deserialize, Serialize};
 
 use strum_macros::EnumString;
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// In general, any JSON input or output is enclosed in an object with a single property named **nftables**.
 ///
 /// See [libnftables-json global structure](Global Structure).
 ///
 /// (Global Structure): <https://manpages.debian.org/testing/libnftables1/libnftables-json.5.en.html#GLOBAL_STRUCTURE>
 pub struct Nftables<'a> {
-    /// An array containing [commands](NfCmd) (for input) or [ruleset elements](NfListObject) (for output).
+    #[new(into)]
     #[serde(rename = "nftables")]
+    /// An array containing [commands](NfCmd) (for input) or [ruleset elements](NfListObject) (for output).
     pub objects: Cow<'a, [NfObject<'a>]>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
 /// A [ruleset element](NfListObject) or [command](NfCmd) in an [nftables document](Nftables).
 pub enum NfObject<'a> {
@@ -32,7 +37,7 @@ pub enum NfObject<'a> {
     ListObject(NfListObject<'a>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// A ruleset element in an [nftables document](Nftables).
 pub enum NfListObject<'a> {
@@ -43,9 +48,9 @@ pub enum NfListObject<'a> {
     /// A rule element.
     Rule(Rule<'a>),
     /// A set element.
-    Set(Box<Set<'a>>),
+    Set(#[new(into)] Box<Set<'a>>),
     /// A map element.
-    Map(Box<Map<'a>>),
+    Map(#[new(into)] Box<Map<'a>>),
     /// An element manipulation.
     Element(Element<'a>),
     /// A flow table.
@@ -71,7 +76,7 @@ pub enum NfListObject<'a> {
     SynProxy(SynProxy<'a>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// A command is an object with a single property whose name identifies the command.
 ///
@@ -118,21 +123,21 @@ pub enum NfCmd<'a> {
     Rename(Chain<'a>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Reset state in suitable objects, i.e. zero their internal counter.
 pub enum ResetObject<'a> {
     /// A counter to reset.
     Counter(Counter<'a>),
     /// A list of counters to reset.
-    Counters(Cow<'a, [Counter<'a>]>),
+    Counters(#[new(into)] Cow<'a, [Counter<'a>]>),
     /// A quota to reset.
     Quota(Quota<'a>),
     /// A list of quotas to reset.
-    Quotas(Cow<'a, [Quota<'a>]>),
+    Quotas(#[new(into)] Cow<'a, [Quota<'a>]>),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Empty contents in given object, e.g. remove all chains from given table or remove all elements from given set.
 pub enum FlushObject<'a> {
@@ -141,9 +146,9 @@ pub enum FlushObject<'a> {
     /// A chain to flush (i.e., remove all rules from chain).
     Chain(Chain<'a>),
     /// A set to flush (i.e., remove all elements from set).
-    Set(Box<Set<'a>>),
+    Set(#[new(into)] Box<Set<'a>>),
     /// A map to flush (i.e., remove all elements from map).
-    Map(Box<Map<'a>>),
+    Map(#[new(into)] Box<Map<'a>>),
     /// A meter to flush.
     Meter(Meter<'a>),
     /// Flush the live ruleset (i.e., remove all elements from live ruleset).
@@ -152,11 +157,14 @@ pub enum FlushObject<'a> {
 
 // Ruleset Elements
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object describes a table.
 pub struct Table<'a> {
     /// The table’s [family](NfFamily), e.g. "ip" or "ip6".
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -178,16 +186,21 @@ impl Default for Table<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object describes a chain.
 pub struct Chain<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The chain’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// New name of the chain when supplied to the [rename command](NfCmd::Rename).
     pub newname: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -213,6 +226,7 @@ pub struct Chain<'a> {
     /// (Base chains): <https://wiki.nftables.org/wiki-nftables/index.php/Configuring_chains#Adding_base_chains>
     pub prio: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// The chain’s bound interface (if in the netdev family).
     /// Required for [base chains](Base chains).
     ///
@@ -244,7 +258,9 @@ impl Default for Chain<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object describes a rule.
 ///
 /// Basic building blocks of rules are statements.
@@ -252,10 +268,13 @@ impl Default for Chain<'_> {
 pub struct Rule<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The chain’s name.
     pub chain: Cow<'a, str>,
+    #[new(into)]
     /// An array of statements this rule consists of.
     ///
     /// In input, it is used in [add](NfCmd::Add)/[insert](NfCmd::Insert)/[replace](NfCmd::Replace) commands only.
@@ -272,6 +291,7 @@ pub struct Rule<'a> {
     /// It is used as an alternative to **handle** then.
     pub index: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// Optional rule comment.
     pub comment: Option<Cow<'a, str>>,
 }
@@ -291,13 +311,17 @@ impl Default for Rule<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Named set that holds expression elements.
 pub struct Set<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The set’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -315,6 +339,7 @@ pub struct Set<'a> {
     /// The set’s flags.
     pub flags: Option<HashSet<SetFlag>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// Initial set element(s).
     ///
     /// A single set element might be given as string, integer or boolean value for simple cases. If additional properties are required, a formal elem object may be used.
@@ -330,6 +355,7 @@ pub struct Set<'a> {
     /// Maximum number of elements supported.
     pub size: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// Optional set comment.
     ///
     /// Set comment attribute requires at least nftables 0.9.7 and kernel 5.10
@@ -356,14 +382,18 @@ impl Default for Set<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Named map that holds expression elements.
 /// Maps are a special form of sets in that they translate a unique key to a value.
 pub struct Map<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The map’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -384,6 +414,7 @@ pub struct Map<'a> {
     /// The map’s flags.
     pub flags: Option<HashSet<SetFlag>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// Initial map set element(s).
     ///
     /// A single set element might be given as string, integer or boolean value for simple cases. If additional properties are required, a formal elem object may be used.
@@ -399,6 +430,7 @@ pub struct Map<'a> {
     /// Maximum number of elements supported.
     pub size: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// Optional map comment.
     ///
     /// The map/set comment attribute requires at least nftables 0.9.7 and kernel 5.10
@@ -426,7 +458,7 @@ impl Default for Map<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
 /// Wrapper for single or concatenated set types.
 /// The set type might be a string, such as `"ipv4_addr"` or an array consisting of strings (for concatenated types).
@@ -434,7 +466,7 @@ pub enum SetTypeValue<'a> {
     /// Single set type.
     Single(SetType),
     /// Concatenated set types.
-    Concatenated(Cow<'a, [SetType]>),
+    Concatenated(#[new(into)] Cow<'a, [SetType]>),
 }
 
 #[derive(
@@ -473,7 +505,7 @@ pub enum SetType {
     Ifname,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Describes a set’s policy.
 pub enum SetPolicy {
@@ -483,7 +515,7 @@ pub enum SetPolicy {
     Memory,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Describes a [set](Set)’s flags.
 pub enum SetFlag {
@@ -498,7 +530,7 @@ pub enum SetFlag {
     Dynamic,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Describes an operator on set.
 pub enum SetOp {
@@ -508,15 +540,20 @@ pub enum SetOp {
     Update,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Manipulate element(s) in a named set.
 pub struct Element<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The set’s name.
     pub name: Cow<'a, str>,
+    #[new(into)]
     /// A single set element might be given as string, integer or boolean value for simple cases.
     /// If additional properties are required, a formal `elem` object may be used.
     /// Multiple elements may be given in an array.
@@ -535,7 +572,9 @@ impl Default for Element<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// [Flowtables] allow you to accelerate packet forwarding in software (and in hardware if your NIC supports it)
 /// by using a conntrack-based network stack bypass.
 ///
@@ -543,8 +582,10 @@ impl Default for Element<'_> {
 pub struct FlowTable<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The [table](Table)’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The flow table’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -560,6 +601,7 @@ pub struct FlowTable<'a> {
         skip_serializing_if = "Option::is_none",
         deserialize_with = "single_string_to_option_vec"
     )]
+    #[new(into)]
     /// The *devices* are specified as iifname(s) of the input interface(s) of the traffic that should be offloaded.
     ///
     /// Devices are required for both traffic directions.
@@ -582,7 +624,9 @@ impl Default for FlowTable<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [counter].
 ///
 /// A counter counts both the total number of packets and the total bytes it has seen since it was last reset.
@@ -592,8 +636,10 @@ impl Default for FlowTable<'_> {
 pub struct Counter<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The [table](Table)’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The counter’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -620,7 +666,9 @@ impl Default for Counter<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [quota](Quota).
 ///
 /// A quota:
@@ -635,8 +683,10 @@ impl Default for Counter<'_> {
 pub struct Quota<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The [table](Table)’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The quota’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -668,28 +718,35 @@ impl Default for Quota<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "ct helper")]
+#[allow(clippy::too_many_arguments)]
 /// Enable the specified [conntrack helper][Conntrack helpers] for this packet.
 ///
 /// [Conntrack helpers]: <https://wiki.nftables.org/wiki-nftables/index.php/Conntrack_helpers>
 pub struct CTHelper<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The [table](Table)’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The ct helper’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct helper’s handle. In input, it is used by the [delete command](NfCmd::Delete) only.
     pub handle: Option<u32>,
     #[serde(rename = "type")]
+    #[new(into)]
     /// The ct helper type name, e.g. "ftp" or "tftp".
     pub _type: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// The ct helper’s layer 4 protocol.
     pub protocol: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// The ct helper’s layer 3 protocol, e.g. "ip" or "ip6".
     pub l3proto: Option<Cow<'a, str>>,
 }
@@ -709,7 +766,9 @@ impl Default for CTHelper<'_> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [limit](Limit).
 ///
 /// A limit uses a [token bucket](Token bucket) filter to match packets:
@@ -721,8 +780,10 @@ impl Default for CTHelper<'_> {
 pub struct Limit<'a> {
     /// The [table](Table)’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The [table](Table)’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The limit’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -763,24 +824,29 @@ impl Default for Limit<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// A unit used in [limits](Limit).
 pub enum LimitUnit {
     /// Limit by number of packets.
     Packets,
-    /// Limit by number of bytes.
+
+   #[allow(clippy::too_many_arguments)] /// Limit by number of bytes.
     Bytes,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 pub struct Meter<'a> {
     pub name: Cow<'a, str>,
     pub key: Expression<'a>,
+    #[new(into)]
     pub stmt: Box<Statement<'a>>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Represents the live ruleset (to be [flushed](NfCmd::Flush)).
 pub struct Ruleset {}
 
@@ -791,16 +857,20 @@ impl Default for Ruleset {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// Library information in output.
 ///
 /// In output, the first object in an nftables array is a special one containing library information.
 pub struct MetainfoObject<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// The value of version property is equal to the package version as printed by `nft -v`.
     pub version: Option<Cow<'a, str>>,
-    /// The value of release_name property is equal to the release name as printed by `nft -v`.
+    #[new(into)]
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// The value of release_name property is equal to the release name as printed by `nft -v`.
     pub release_name: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The JSON Schema version.
@@ -824,7 +894,9 @@ impl Default for MetainfoObject<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [conntrack timeout][Ct timeout] policy.
 ///
 /// You can use a ct timeout object to specify a connection tracking timeout policy for a particular flow.
@@ -833,8 +905,10 @@ impl Default for MetainfoObject<'_> {
 pub struct CTTimeout<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The ct timeout object’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -844,12 +918,14 @@ pub struct CTTimeout<'a> {
     /// The ct timeout object’s [layer 4 protocol](CTHProto).
     pub protocol: Option<CTHProto>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// The connection state name, e.g. "established", "syn_sent", "close" or "close_wait", for which the timeout value has to be updated.
     pub state: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The updated timeout value for the specified connection state.
     pub value: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// The ct timeout object’s layer 3 protocol, e.g. "ip" or "ip6".
     pub l3proto: Option<Cow<'a, str>>,
 }
@@ -870,21 +946,26 @@ impl Default for CTTimeout<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
+#[allow(clippy::too_many_arguments)]
 /// This object represents a named [conntrack expectation][Ct expectation].
 ///
 /// [Ct expectation]: <https://wiki.nftables.org/wiki-nftables/index.php/Ct_expectation>
 pub struct CTExpectation<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The ct expectation object’s name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct expectation object’s handle. In input, it is used by delete command only.
     pub handle: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[new(into)]
     /// The ct expectation object’s layer 3 protocol, e.g. "ip" or "ip6".
     pub l3proto: Option<Cow<'a, str>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -901,18 +982,22 @@ pub struct CTExpectation<'a> {
     pub size: Option<u32>,
 }
 
+#[allow(clippy::too_many_arguments)]
 /// [SynProxy] intercepts new TCP connections and handles the initial 3-way handshake using
 /// syncookies instead of conntrack to establish the connection.
 ///
 /// Named SynProxy requires **nftables 0.9.3 or newer**.
 ///
 /// [SynProxy]: https://wiki.nftables.org/wiki-nftables/index.php/Synproxy
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 pub struct SynProxy<'a> {
     /// The table’s family.
     pub family: NfFamily,
+    #[new(into)]
     /// The table’s name.
     pub table: Cow<'a, str>,
+    #[new(into)]
     /// The synproxy's name.
     pub name: Cow<'a, str>,
     #[serde(skip_serializing_if = "Option::is_none")]

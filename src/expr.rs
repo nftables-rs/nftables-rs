@@ -1,22 +1,28 @@
+use derive_builder::Builder;
+use derive_new::new;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet};
 
-use crate::stmt::{Counter, JumpTarget, Statement};
+use crate::{
+    error::NftablesError,
+    stmt::{Counter, JumpTarget, Statement},
+};
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
 /// Expressions are the building blocks of (most) [statements](crate::stmt::Statement).
 /// In their most basic form, they are just immediate values represented as a
 /// JSON string, integer or boolean type.
 pub enum Expression<'a> {
+    #[new(into)]
     // immediates
     /// A string expression (*immediate expression*).
     /// For string expressions there are two special cases:
     ///   * `@STRING`: The remaining part is taken as [set](crate::schema::Set)
     ///     name to create a set reference.
     ///   * `\*`: Construct a wildcard expression.
-    String(Cow<'a, str>),
+    String(#[new(into)] Cow<'a, str>),
     /// An integer expression (*immediate expression*).
     Number(u32),
     /// A boolean expression (*immediate expression*).
@@ -24,11 +30,11 @@ pub enum Expression<'a> {
     /// List expressions are constructed by plain arrays containing of an arbitrary number of expressions.
     List(Vec<Expression<'a>>),
     /// A [binary operation](BinaryOperation) expression.
-    BinaryOperation(Box<BinaryOperation<'a>>),
+    BinaryOperation(#[new(into)] Box<BinaryOperation<'a>>),
     /// Construct a range of values.
     ///
     /// The first array item denotes the lower boundary, the second one the upper boundary.
-    Range(Box<Range<'a>>),
+    Range(#[new(into)] Box<Range<'a>>),
 
     /// Wrapper for non-immediate expressions.
     Named(NamedExpression<'a>),
@@ -36,7 +42,7 @@ pub enum Expression<'a> {
     Verdict(Verdict<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Wrapper for non-immediate [Expressions](Expression).
 pub enum NamedExpression<'a> {
@@ -46,7 +52,7 @@ pub enum NamedExpression<'a> {
     /// For mappings, an array of arrays with exactly two elements is expected.
     Set(Vec<SetItem<'a>>),
     /// Map a key to a value.
-    Map(Box<Map<'a>>),
+    Map(#[new(into)] Box<Map<'a>>),
     /// Construct an IPv4 or IPv6 [prefix](Prefix) consisting of address part and prefix length.
     Prefix(Prefix<'a>),
 
@@ -89,7 +95,14 @@ pub enum NamedExpression<'a> {
     Osf(Osf<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+impl From<NamedExpression<'static>> for Expression<'static> {
+    fn from(named_expr: NamedExpression<'static>) -> Self {
+        Expression::new_named(named_expr)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "map")]
 /// Map a key to a value.
 pub struct Map<'a> {
@@ -109,7 +122,7 @@ impl Default for Map<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
 /// Item in an anonymous set.
 pub enum SetItem<'a> {
@@ -121,18 +134,21 @@ pub enum SetItem<'a> {
     MappingStatement(Expression<'a>, Statement<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "prefix")]
 /// Construct an IPv4 or IPv6 prefix consisting of address part in
 /// [addr](Prefix::addr) and prefix length in [len](Prefix::len).
 pub struct Prefix<'a> {
+    #[new(into)]
     /// An IPv4 or IPv6 address.
     pub addr: Box<Expression<'a>>,
     /// The prefix length.
     pub len: u32,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "range")]
 /// Construct a range of values.
 /// The first array item denotes the lower boundary, the second one the upper
@@ -145,7 +161,7 @@ pub struct Range<'a> {
     pub range: [Expression<'a>; 2],
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(untagged)]
 /// Construct a payload expression, i.e. a reference to a certain part of packet
 /// data.
@@ -157,7 +173,8 @@ pub enum Payload<'a> {
     PayloadRaw(PayloadRaw),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Creates a raw payload expression to point at a random number
 /// ([len](PayloadRaw::len)) of bits at a certain offset
 /// ([offset](PayloadRaw::offset)) from a given reference point
@@ -182,15 +199,18 @@ impl Default for PayloadRaw {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 /// Construct a payload expression, i.e. a reference to a certain part of packet
 /// data.
 ///
 /// Allows to reference a field by name ([field](PayloadField::field)) in a
 /// named packet header ([protocol](PayloadField::protocol)).
 pub struct PayloadField<'a> {
+    #[new(into)]
     /// A named packet header.
     pub protocol: Cow<'a, str>,
+    #[new(into)]
     /// The field name.
     pub field: Cow<'a, str>,
 }
@@ -205,7 +225,7 @@ impl Default for PayloadField<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents a protocol layer for [payload](Payload) references.
 pub enum PayloadBase {
@@ -223,15 +243,18 @@ pub enum PayloadBase {
     IH,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "exthdr")]
 /// Create a reference to a field ([field](Exthdr::field)) in an IPv6 extension
 /// header ([name](Exthdr::name)).
 ///
 /// [offset](Exthdr::offset) is used only for `rt0` protocol.
 pub struct Exthdr<'a> {
+    #[new(into)]
     /// The IPv6 extension header name.
     pub name: Cow<'a, str>,
+    #[new(into)]
     /// The field name.
     ///
     /// If the [field][Exthdr::field] property is not given, the expression is
@@ -254,13 +277,16 @@ impl Default for Exthdr<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "tcp option")]
 /// Create a reference to a field ([field](TcpOption::field)) of a TCP option
 /// header ([name](TcpOption::field)).
 pub struct TcpOption<'a> {
+    #[new(into)]
     /// The TCP option header name.
     pub name: Cow<'a, str>,
+    #[new(into)]
     /// The field name.
     ///
     /// If the field property is not given, the expression is to be used as a
@@ -280,13 +306,16 @@ impl Default for TcpOption<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "sctp chunk")]
 /// Create a reference to a field ([field](SctpChunk::field)) of an SCTP chunk
 /// ((name)[SctpChunk::name]).
 pub struct SctpChunk<'a> {
+    #[new(into)]
     /// The SCTP chunk name.
     pub name: Cow<'a, str>,
+    #[new(into)]
     /// The field name.
     ///
     /// If the field property is not given, the expression is to be used as an
@@ -296,7 +325,8 @@ pub struct SctpChunk<'a> {
     pub field: Cow<'a, str>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "meta")]
 /// Create a reference to packet meta data.
 ///
@@ -316,7 +346,7 @@ impl Default for Meta {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents a `meta` key for packet meta data.
 ///
@@ -396,7 +426,8 @@ pub enum MetaKey {
     Nftrace,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "rt")]
 /// Create a reference to packet routing data.
 pub struct RT {
@@ -419,7 +450,7 @@ impl Default for RT {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents a key to reference to packet routing data.
 pub enum RTKey {
@@ -431,7 +462,7 @@ pub enum RTKey {
     MTU,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents a protocol family for use by the [rt](RT) expression.
 pub enum RTFamily {
@@ -441,10 +472,12 @@ pub enum RTFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "ct")]
 /// Create a reference to packet conntrack data.
 pub struct CT<'a> {
+    #[new(into)]
     /// The conntrack expression.
     ///
     /// See also: *CONNTRACK EXPRESSIONS* in *ntf(8)*.
@@ -471,7 +504,7 @@ impl Default for CT<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents a protocol family for use by the [ct](CT) expression.
 pub enum CTFamily {
@@ -481,7 +514,7 @@ pub enum CTFamily {
     IP6,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents a direction for use by the [ct](CT) expression.
 pub enum CTDir {
@@ -491,7 +524,8 @@ pub enum CTDir {
     Reply,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "numgen")]
 /// Create a number generator.
 pub struct Numgen {
@@ -517,7 +551,7 @@ impl Default for Numgen {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents a number generator mode.
 pub enum NgMode {
@@ -527,7 +561,8 @@ pub enum NgMode {
     Random,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "jhash")]
 /// Hash packet data (Jenkins Hash).
 pub struct JHash<'a> {
@@ -537,6 +572,7 @@ pub struct JHash<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Increment the returned value by a fixed offset.
     pub offset: Option<u32>,
+    #[new(into)]
     /// Determines the parameters of the packet header to apply the hashing,
     /// concatenations are possible as well.
     pub expr: Box<Expression<'a>>,
@@ -562,7 +598,8 @@ impl Default for JHash<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "symhash")]
 /// Hash packet data (Symmetric Hash).
 pub struct SymHash {
@@ -583,7 +620,8 @@ impl Default for SymHash {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "fib")]
 /// Perform kernel Forwarding Information Base lookups.
 pub struct Fib {
@@ -606,7 +644,7 @@ impl Default for Fib {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents which data is queried by [fib](Fib) lookup.
 pub enum FibResult {
@@ -618,7 +656,7 @@ pub enum FibResult {
     Type,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// Represents flags for `fib` lookup.
 pub enum FibFlag {
@@ -634,7 +672,7 @@ pub enum FibFlag {
     Oif,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 /// Represents a binary operation to be used in an `Expression`.
 pub enum BinaryOperation<'a> {
     #[serde(rename = "&")]
@@ -658,7 +696,7 @@ pub enum BinaryOperation<'a> {
     RSHIFT(Expression<'a>, Expression<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// A verdict expression (used in [verdict maps](crate::stmt::VerdictMap)).
 ///
@@ -703,13 +741,15 @@ pub enum Verdict<'a> {
     Goto(JumpTarget<'a>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "elem")]
 /// Explicitly set element object.
 ///
 /// Element-related commands allow one to change contents of named
 /// [sets](crate::schema::Set) and [maps](crate::schema::Map).
 pub struct Elem<'a> {
+    #[new(into)]
     /// The element value.
     pub val: Box<Expression<'a>>,
     /// Timeout value for [sets](crate::schema::Set)/[maps](crate::schema::Map).
@@ -717,6 +757,7 @@ pub struct Elem<'a> {
     pub timeout: Option<u32>,
     /// The time until given element expires, useful for ruleset replication only.
     pub expires: Option<u32>,
+    #[new(into)]
     /// Per element comment field.
     pub comment: Option<Cow<'a, str>>,
     /// Enable a [counter][crate::stmt::Counter] per element.
@@ -738,10 +779,12 @@ impl Default for Elem<'_> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "socket")]
 /// Construct a reference to packet’s socket.
 pub struct Socket<'a> {
+    #[new(into)]
     /// The socket attribute to match on.
     pub key: Cow<'a, SocketAttr>,
 }
@@ -755,7 +798,7 @@ impl Default for Socket<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// A [socket][Socket] attribute to match on.
 pub enum SocketAttr {
@@ -769,13 +812,15 @@ pub enum SocketAttr {
     Cgroupv2,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema, Builder, new)]
+#[builder(build_fn(error = "NftablesError"), setter(into, strip_option))]
 #[serde(rename = "osf")]
 /// Perform OS fingerprinting.
 ///
 /// This expression is typically used in the [LHS](crate::stmt::Match::left) of
 /// a [match](crate::stmt::Match) statement.
 pub struct Osf<'a> {
+    #[new(into)]
     /// Name of the OS signature to match.
     ///
     /// All signatures can be found at `pf.os` file.
@@ -785,7 +830,7 @@ pub struct Osf<'a> {
     pub ttl: OsfTtl,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema, new)]
 #[serde(rename_all = "lowercase")]
 /// TTL check mode for [osf](Osf).
 pub enum OsfTtl {

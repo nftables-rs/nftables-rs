@@ -23,7 +23,7 @@ compile_error!("features `tokio` and `async-process` are mutually exclusive");
 
 /// Error during `nft` execution.
 #[derive(Error, Debug)]
-pub enum NftablesError {
+pub enum NftExecutableError {
     #[error("unable to execute {program:?}: {inner}")]
     NftExecution { program: OsString, inner: io::Error },
     #[error("{program:?}'s output contained invalid utf8: {inner}")]
@@ -45,7 +45,7 @@ pub enum NftablesError {
 /// Get the rule set that is currently active in the kernel.
 ///
 /// This is done by calling the default `nft` executable with default arguments.
-pub fn get_current_ruleset() -> Result<Nftables<'static>, NftablesError> {
+pub fn get_current_ruleset() -> Result<Nftables<'static>, NftExecutableError> {
     get_current_ruleset_with_args(DEFAULT_NFT, DEFAULT_ARGS)
 }
 
@@ -62,14 +62,14 @@ pub fn get_current_ruleset() -> Result<Nftables<'static>, NftablesError> {
 pub fn get_current_ruleset_with_args<'a, P, A, I>(
     program: Option<&P>,
     args: I,
-) -> Result<Nftables<'static>, NftablesError>
+) -> Result<Nftables<'static>, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
     I: IntoIterator<Item = &'a A> + 'a,
 {
     let output = get_current_ruleset_raw(program, args)?;
-    serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
+    serde_json::from_str(&output).map_err(NftExecutableError::NftInvalidJson)
 }
 
 /// Get the current raw rule set json by calling a custom `nft` with custom arguments.
@@ -85,7 +85,7 @@ where
 pub fn get_current_ruleset_raw<'a, P, A, I>(
     program: Option<&P>,
     args: I,
-) -> Result<String, NftablesError>
+) -> Result<String, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -102,7 +102,7 @@ where
         None => nft_cmd.args(["list", "ruleset"]),
     };
     let process_result = nft_cmd.output();
-    let process_result = process_result.map_err(|e| NftablesError::NftExecution {
+    let process_result = process_result.map_err(|e| NftExecutableError::NftExecution {
         inner: e,
         program: program.into(),
     })?;
@@ -112,7 +112,7 @@ where
     if !process_result.status.success() {
         let stderr = read_output(program, process_result.stderr)?;
 
-        return Err(NftablesError::NftFailed {
+        return Err(NftExecutableError::NftFailed {
             program: program.into(),
             hint: "getting the current ruleset".to_string(),
             stdout,
@@ -126,7 +126,7 @@ where
 ///
 /// See the synchronous [`get_current_ruleset`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
-pub async fn get_current_ruleset_async() -> Result<Nftables<'static>, NftablesError> {
+pub async fn get_current_ruleset_async() -> Result<Nftables<'static>, NftExecutableError> {
     get_current_ruleset_with_args_async(DEFAULT_NFT, DEFAULT_ARGS).await
 }
 
@@ -137,14 +137,14 @@ pub async fn get_current_ruleset_async() -> Result<Nftables<'static>, NftablesEr
 pub async fn get_current_ruleset_with_args_async<'a, P, A, I>(
     program: Option<&P>,
     args: I,
-) -> Result<Nftables<'static>, NftablesError>
+) -> Result<Nftables<'static>, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
     I: IntoIterator<Item = &'a A> + 'a,
 {
     let output = get_current_ruleset_raw_async(program, args).await?;
-    serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
+    serde_json::from_str(&output).map_err(NftExecutableError::NftInvalidJson)
 }
 
 /// Get the current raw rule set json asynchronously by calling a custom `nft` with custom arguments.
@@ -154,7 +154,7 @@ where
 pub async fn get_current_ruleset_raw_async<'a, P, A, I>(
     program: Option<&P>,
     args: I,
-) -> Result<String, NftablesError>
+) -> Result<String, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -176,7 +176,7 @@ where
         None => nft_cmd.args(["list", "ruleset"]),
     };
     let process_result = nft_cmd.output().await;
-    let process_result = process_result.map_err(|e| NftablesError::NftExecution {
+    let process_result = process_result.map_err(|e| NftExecutableError::NftExecution {
         inner: e,
         program: program.into(),
     })?;
@@ -186,7 +186,7 @@ where
     if !process_result.status.success() {
         let stderr = read_output(program, process_result.stderr)?;
 
-        return Err(NftablesError::NftFailed {
+        return Err(NftExecutableError::NftFailed {
             program: program.into(),
             hint: "getting the current ruleset".to_string(),
             stdout,
@@ -199,7 +199,7 @@ where
 /// Apply the given rule set to the kernel.
 ///
 /// This is done by calling the default `nft` executable with default arguments.
-pub fn apply_ruleset(nftables: &Nftables) -> Result<(), NftablesError> {
+pub fn apply_ruleset(nftables: &Nftables) -> Result<(), NftExecutableError> {
     apply_ruleset_with_args(nftables, DEFAULT_NFT, DEFAULT_ARGS)
 }
 
@@ -215,7 +215,7 @@ pub fn apply_ruleset_with_args<'a, P, A, I>(
     nftables: &Nftables,
     program: Option<&P>,
     args: I,
-) -> Result<(), NftablesError>
+) -> Result<(), NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -231,7 +231,9 @@ where
 ///
 /// This is done by using `nft --echo`. One can get rule handles from the returned
 /// objects for future modifications, positional inserts, as well as removal.
-pub fn apply_and_return_ruleset(nftables: &Nftables) -> Result<Nftables<'static>, NftablesError> {
+pub fn apply_and_return_ruleset(
+    nftables: &Nftables,
+) -> Result<Nftables<'static>, NftExecutableError> {
     apply_and_return_ruleset_with_args(nftables, DEFAULT_NFT, DEFAULT_ARGS)
 }
 
@@ -244,7 +246,7 @@ pub fn apply_and_return_ruleset_with_args<'a, P, A, I>(
     nftables: &Nftables,
     program: Option<&P>,
     args: I,
-) -> Result<Nftables<'static>, NftablesError>
+) -> Result<Nftables<'static>, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -256,7 +258,7 @@ where
         .map(AsRef::as_ref)
         .chain(Some("--echo".as_ref()));
     let output = apply_ruleset_raw(&nftables, program, args)?;
-    serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
+    serde_json::from_str(&output).map_err(NftExecutableError::NftInvalidJson)
 }
 
 /// Apply the given raw rule set json by calling a custom `nft` with custom arguments.
@@ -273,7 +275,7 @@ pub fn apply_ruleset_raw<'a, P, A, I>(
     payload: &str,
     program: Option<&P>,
     args: I,
-) -> Result<String, NftablesError>
+) -> Result<String, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -290,7 +292,7 @@ where
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn();
-    let mut process = process.map_err(|e| NftablesError::NftExecution {
+    let mut process = process.map_err(|e| NftExecutableError::NftExecution {
         program: program.into(),
         inner: e,
     })?;
@@ -298,7 +300,7 @@ where
     let mut stdin = process.stdin.take().unwrap();
     stdin
         .write_all(payload.as_bytes())
-        .map_err(|e| NftablesError::NftExecution {
+        .map_err(|e| NftExecutableError::NftExecution {
             program: program.into(),
             inner: e,
         })?;
@@ -311,14 +313,14 @@ where
             let stdout = read_output(program, process_result.stdout)?;
             let stderr = read_output(program, process_result.stderr)?;
 
-            Err(NftablesError::NftFailed {
+            Err(NftExecutableError::NftFailed {
                 program: program.into(),
                 hint: "applying ruleset".to_string(),
                 stdout,
                 stderr,
             })
         }
-        Err(e) => Err(NftablesError::NftExecution {
+        Err(e) => Err(NftExecutableError::NftExecution {
             program: program.into(),
             inner: e,
         }),
@@ -329,7 +331,7 @@ where
 ///
 /// See the synchronous [`apply_ruleset`] for more information.
 #[cfg(any(feature = "tokio", feature = "async-process"))]
-pub async fn apply_ruleset_async(nftables: &Nftables<'_>) -> Result<(), NftablesError> {
+pub async fn apply_ruleset_async(nftables: &Nftables<'_>) -> Result<(), NftExecutableError> {
     apply_ruleset_with_args_async(nftables, DEFAULT_NFT, DEFAULT_ARGS).await
 }
 
@@ -341,7 +343,7 @@ pub async fn apply_ruleset_with_args_async<'a, P, A, I>(
     nftables: &Nftables<'_>,
     program: Option<&P>,
     args: I,
-) -> Result<(), NftablesError>
+) -> Result<(), NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -359,7 +361,7 @@ where
 #[cfg(any(feature = "tokio", feature = "async-process"))]
 pub async fn apply_and_return_ruleset_async(
     nftables: &Nftables<'_>,
-) -> Result<Nftables<'static>, NftablesError> {
+) -> Result<Nftables<'static>, NftExecutableError> {
     apply_and_return_ruleset_with_args_async(nftables, DEFAULT_NFT, DEFAULT_ARGS).await
 }
 
@@ -372,7 +374,7 @@ pub async fn apply_and_return_ruleset_with_args_async<'a, P, A, I>(
     nftables: &Nftables<'_>,
     program: Option<&P>,
     args: I,
-) -> Result<Nftables<'static>, NftablesError>
+) -> Result<Nftables<'static>, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -384,7 +386,7 @@ where
         .map(AsRef::as_ref)
         .chain(Some("--echo".as_ref()));
     let output = apply_ruleset_raw_async(&nftables, program, args).await?;
-    serde_json::from_str(&output).map_err(NftablesError::NftInvalidJson)
+    serde_json::from_str(&output).map_err(NftExecutableError::NftInvalidJson)
 }
 
 /// Apply the given raw rule set json asynchronously by calling a custom `nft` with custom arguments.
@@ -395,7 +397,7 @@ pub async fn apply_ruleset_raw_async<'a, P, A, I>(
     payload: &str,
     program: Option<&P>,
     args: I,
-) -> Result<String, NftablesError>
+) -> Result<String, NftExecutableError>
 where
     P: AsRef<OsStr> + ?Sized,
     A: AsRef<OsStr> + ?Sized + 'a,
@@ -421,7 +423,7 @@ where
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn();
-    let mut process = process.map_err(|e| NftablesError::NftExecution {
+    let mut process = process.map_err(|e| NftExecutableError::NftExecution {
         program: program.into(),
         inner: e,
     })?;
@@ -430,7 +432,7 @@ where
     stdin
         .write_all(payload.as_bytes())
         .await
-        .map_err(|e| NftablesError::NftExecution {
+        .map_err(|e| NftExecutableError::NftExecution {
             program: program.into(),
             inner: e,
         })?;
@@ -446,22 +448,22 @@ where
             let stdout = read_output(program, process_result.stdout)?;
             let stderr = read_output(program, process_result.stderr)?;
 
-            Err(NftablesError::NftFailed {
+            Err(NftExecutableError::NftFailed {
                 program: program.into(),
                 hint: "applying ruleset".to_string(),
                 stdout,
                 stderr,
             })
         }
-        Err(e) => Err(NftablesError::NftExecution {
+        Err(e) => Err(NftExecutableError::NftExecution {
             program: program.into(),
             inner: e,
         }),
     }
 }
 
-fn read_output(program: impl Into<OsString>, bytes: Vec<u8>) -> Result<String, NftablesError> {
-    String::from_utf8(bytes).map_err(|e| NftablesError::NftOutputEncoding {
+fn read_output(program: impl Into<OsString>, bytes: Vec<u8>) -> Result<String, NftExecutableError> {
+    String::from_utf8(bytes).map_err(|e| NftExecutableError::NftOutputEncoding {
         inner: e,
         program: program.into(),
     })
