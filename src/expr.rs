@@ -643,7 +643,7 @@ pub enum BinaryOperation<'a> {
 
     #[serde(rename = "|")]
     /// Binary OR (`|`)
-    OR(Expression<'a>, Expression<'a>),
+    OR(Vec<Expression<'a>>),
 
     #[serde(rename = "^")]
     /// Binary XOR (`^`)
