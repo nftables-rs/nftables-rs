@@ -1,4 +1,4 @@
-use nftables::expr::{self, Expression, Meta, MetaKey, NamedExpression};
+use nftables::expr::{self, BinaryOperation, Expression, Meta, MetaKey, NamedExpression};
 use nftables::stmt::{self, Counter, Match, Operator, Queue, Statement};
 use nftables::{schema::*, types::*};
 use serde_json::json;
@@ -323,5 +323,73 @@ fn test_parse_payload() {
     });
 
     let parsed: Nftables = serde_json::from_value(json).unwrap();
+    assert_eq!(expected, parsed);
+}
+
+#[test]
+fn test_bit_flags() {
+    let expected = NfListObject::Rule(Rule {
+        family: NfFamily::INet,
+        table: Cow::Borrowed("test_table"),
+        chain: Cow::Borrowed("input"),
+        expr: Cow::Owned(vec![Statement::Match(Match {
+            op: Operator::EQ,
+            left: Expression::BinaryOperation(Box::new(BinaryOperation::AND(
+                Expression::Named(NamedExpression::Payload(
+                    nftables::expr::Payload::PayloadField(nftables::expr::PayloadField {
+                        protocol: Cow::Borrowed("tcp"),
+                        field: Cow::Borrowed("flags"),
+                    }),
+                )),
+                Expression::BinaryOperation(Box::new(BinaryOperation::OR(vec![
+                    Expression::String(Cow::Borrowed("fin")),
+                    Expression::String(Cow::Borrowed("syn")),
+                    Expression::String(Cow::Borrowed("rst")),
+                    Expression::String(Cow::Borrowed("ack")),
+                ]))),
+            ))),
+            right: Expression::String(Cow::Borrowed("syn")),
+        })]),
+        handle: Some(27),
+        index: None,
+        comment: None,
+    });
+
+    let json = json!({
+    "rule": {
+      "family": "inet",
+      "table": "test_table",
+      "chain": "input",
+      "handle": 27,
+      "expr": [
+        {
+          "match": {
+            "op": "==",
+            "left": {
+              "&": [
+                {
+                  "payload": {
+                    "protocol": "tcp",
+                    "field": "flags"
+                  }
+                },
+                {
+                  "|": [
+                    "fin",
+                    "syn",
+                    "rst",
+                    "ack"
+                  ]
+                }
+              ]
+            },
+            "right": "syn"
+          }
+        }
+      ]
+    }
+    });
+
+    let parsed: NfListObject = serde_json::from_value(json).unwrap();
     assert_eq!(expected, parsed);
 }
