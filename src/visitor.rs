@@ -113,3 +113,49 @@ where
         None => s.serialize_some(&0_usize),
     }
 }
+
+/// Deserialize string or array of strings into the given HashSet type.
+pub fn deserialize_flags<'de, D, T>(deserializer: D) -> Result<HashSet<T>, D::Error>
+where
+    D: de::Deserializer<'de>,
+    T: FromStr + Eq + core::hash::Hash + Deserialize<'de>,
+    <T as FromStr>::Err: std::fmt::Display,
+{
+    struct FlagSet<T>(PhantomData<T>);
+    impl<'de, T> de::Visitor<'de> for FlagSet<T>
+    where
+        T: FromStr + Eq + core::hash::Hash + Deserialize<'de>,
+        <T as FromStr>::Err: std::fmt::Display,
+    {
+        type Value = HashSet<T>;
+
+        fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+            formatter.write_str("single string or list of strings")
+        }
+
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(HashSet::default())
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+            <T as FromStr>::Err: std::fmt::Display,
+        {
+            let mut h: HashSet<T> = HashSet::new();
+            h.insert(T::from_str(value).map_err(<E>::custom)?);
+            Ok(h)
+        }
+
+        fn visit_seq<S>(self, visitor: S) -> Result<Self::Value, S::Error>
+        where
+            S: de::SeqAccess<'de>,
+        {
+            Deserialize::deserialize(de::value::SeqAccessDeserializer::new(visitor))
+        }
+    }
+    deserializer.deserialize_any(FlagSet(PhantomData))
+}
