@@ -94,7 +94,9 @@ where
         where
             S: de::SeqAccess<'de>,
         {
-            Deserialize::deserialize(de::value::SeqAccessDeserializer::new(visitor))
+            let h: HashSet<LogFlag> =
+                Deserialize::deserialize(de::value::SeqAccessDeserializer::new(visitor))?;
+            Ok(Some(h))
         }
     }
     deserializer.deserialize_any(LogFlagSet(PhantomData))
