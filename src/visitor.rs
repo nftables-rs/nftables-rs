@@ -86,7 +86,7 @@ where
             E: de::Error,
         {
             let mut h: HashSet<LogFlag> = HashSet::new();
-            h.insert(LogFlag::from_str(value).unwrap());
+            h.insert(LogFlag::from_str(value).map_err(<E>::custom)?);
             Ok(Some(h))
         }
 
