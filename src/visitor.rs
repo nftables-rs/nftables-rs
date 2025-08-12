@@ -1,8 +1,6 @@
 use serde::{de, Deserialize};
 use std::{borrow::Cow, collections::HashSet, fmt::Formatter, marker::PhantomData, str::FromStr};
 
-use crate::stmt::LogFlag;
-
 type CowCowStrs<'a> = Cow<'a, [Cow<'a, str>]>;
 
 /// Deserialize null, a string, or string sequence into an `Option<Cow<'a, [Cow<'a, str>]>>`.
@@ -59,16 +57,22 @@ where
     deserializer.deserialize_any(StringOrVec(PhantomData))
 }
 
-/// Deserialize null, a string or string sequence into an `Option<HashSet<LogFlag>>`.
-pub fn single_string_to_option_hashset_logflag<'de, D>(
+/// Deserialize null, a string or string sequence into an `Option<HashSet<T>>`.
+pub fn deserialize_optional_flags<'de, D, T>(
     deserializer: D,
-) -> Result<Option<HashSet<LogFlag>>, D::Error>
+) -> Result<Option<HashSet<T>>, D::Error>
 where
+    T: FromStr + Eq + core::hash::Hash + Deserialize<'de>,
+    <T as FromStr>::Err: std::fmt::Display,
     D: de::Deserializer<'de>,
 {
-    struct LogFlagSet(PhantomData<Option<HashSet<LogFlag>>>);
-    impl<'de> de::Visitor<'de> for LogFlagSet {
-        type Value = Option<HashSet<LogFlag>>;
+    struct FlagSet<T>(PhantomData<T>);
+    impl<'de, T> de::Visitor<'de> for FlagSet<T>
+    where
+        T: FromStr + Eq + core::hash::Hash + Deserialize<'de>,
+        <T as FromStr>::Err: std::fmt::Display,
+    {
+        type Value = Option<HashSet<T>>;
 
         fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
             formatter.write_str("single string or list of strings")
@@ -85,8 +89,8 @@ where
         where
             E: de::Error,
         {
-            let mut h: HashSet<LogFlag> = HashSet::new();
-            h.insert(LogFlag::from_str(value).map_err(<E>::custom)?);
+            let mut h: HashSet<T> = HashSet::new();
+            h.insert(T::from_str(value).map_err(<E>::custom)?);
             Ok(Some(h))
         }
 
@@ -94,12 +98,12 @@ where
         where
             S: de::SeqAccess<'de>,
         {
-            let h: HashSet<LogFlag> =
+            let h: HashSet<T> =
                 Deserialize::deserialize(de::value::SeqAccessDeserializer::new(visitor))?;
             Ok(Some(h))
         }
     }
-    deserializer.deserialize_any(LogFlagSet(PhantomData))
+    deserializer.deserialize_any(FlagSet(PhantomData))
 }
 
 /// Serialize an [Option] with [Option::None] value as `0`.

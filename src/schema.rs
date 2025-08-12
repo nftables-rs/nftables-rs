@@ -1,6 +1,7 @@
 use schemars::JsonSchema;
 use std::{borrow::Cow, collections::HashSet};
 
+use crate::visitor::deserialize_optional_flags;
 use crate::{
     expr::Expression, stmt::Statement, types::*, visitor::single_string_to_option_vec,
     DEFAULT_CHAIN, DEFAULT_FAMILY, DEFAULT_TABLE,
@@ -924,7 +925,11 @@ pub struct SynProxy<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The window scale (must match your backend server).
     pub wscale: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_optional_flags",
+        default
+    )]
     /// The synproxy's [flags](crate::types::SynProxyFlag).
     pub flags: Option<HashSet<SynProxyFlag>>,
 }

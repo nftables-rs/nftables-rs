@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
 
 use crate::types::{RejectCode, SynProxyFlag};
-use crate::visitor::single_string_to_option_hashset_logflag;
+use crate::visitor::deserialize_optional_flags;
 
 use crate::expr::Expression;
 use std::borrow::Cow;
@@ -356,7 +356,7 @@ pub struct Log<'a> {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
-        deserialize_with = "single_string_to_option_hashset_logflag"
+        deserialize_with = "deserialize_optional_flags"
     )]
     /// Log flags.
     pub flags: Option<HashSet<LogFlag>>,
@@ -474,7 +474,11 @@ pub struct SynProxy {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// window scale (must match your backend server)
     pub wscale: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_optional_flags",
+        default
+    )]
     /// The synproxy's [flags][crate::types::SynProxyFlag].
     pub flags: Option<HashSet<SynProxyFlag>>,
 }
