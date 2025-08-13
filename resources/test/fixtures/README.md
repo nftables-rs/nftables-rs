@@ -24,3 +24,31 @@ table ip test {
 	}
 }
 ```
+
+## set and map test
+
+```
+table ip test {
+	set set1 {
+		type inet_service
+		flags interval
+	}
+
+	set set2 {
+		type inet_service
+		flags interval,timeout
+		timeout 10s
+	}
+
+	map map1 {
+		type inet_service : inet_service
+		flags interval
+	}
+
+	map map2 {
+		type inet_service : inet_service
+		flags interval,timeout
+		timeout 20s
+	}
+}
+```

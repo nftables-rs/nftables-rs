@@ -35,3 +35,11 @@ fn test_parse_synproxy_flags() {
         "resources/test/fixtures/synproxy-flag-2.json",
     );
 }
+
+#[test]
+fn test_parse_set_map_flags() {
+    parse_and_compare_files(
+        "resources/test/fixtures/set-map-flag-1.json",
+        "resources/test/fixtures/set-map-flag-2.json",
+    );
+}
