@@ -1,0 +1,12 @@
+#!/sbin/nft -f
+
+flush ruleset
+
+table inet filter {
+
+	chain input {
+	     tcp flags and syn == syn|ack drop
+	     tcp flags and (syn|ack|fin|rst) == syn drop
+	     tcp flags and (syn|ack|fin|rst) == syn|ack drop
+	}
+}
