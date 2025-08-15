@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.3](https://github.com/nftables-rs/nftables-rs/compare/v0.6.2...v0.6.3)
+
+### 🐛 Bug Fixes
+
+- Bitwise flags or with more than two operands - ([9024a91](https://github.com/nftables-rs/nftables-rs/commit/9024a91fc4d8764bc70c66eee8ce54ca599bfc9e))
+  - Changed BinaryOperation::OR to accept Vec<Expression> instead of exactly two.
+  - Added regression test (tests/test_bit_flags)
+- Accept single or multiple set/map flags - ([54ba9a3](https://github.com/nftables-rs/nftables-rs/commit/54ba9a30e9d083be64dbf2b777fed56ffe173236))
+- Accept single or multiple synproxy flags - ([c7ce1b0](https://github.com/nftables-rs/nftables-rs/commit/c7ce1b0c4a3a26bf3b8e86fffd5b4519a518bad9))
+- Accept fib flags as string or array - ([d234af6](https://github.com/nftables-rs/nftables-rs/commit/d234af6ea17015dfd62cc249c38b15565fbfa3dd))
+- Correctly parse log opts as array - ([0294fb2](https://github.com/nftables-rs/nftables-rs/commit/0294fb260173669ed556ba007642c875a6c3d71e))
+- Do not panic when parsing an unsupported log flag - ([4c6a943](https://github.com/nftables-rs/nftables-rs/commit/4c6a943fef48457ca55f4b62ab944e58ad61607f))
+
+### 🧪 Testing
+
+- *(expr)* Bitwise flags or with more than two operands - ([f1d6e16](https://github.com/nftables-rs/nftables-rs/commit/f1d6e16bd6d91d6185cdf501be36401c58dfefaa))
+
+
 ## [0.6.2](https://github.com/nftables-rs/nftables-rs/compare/v0.6.1...v0.6.2)
 
 ### 🐛 Bug Fixes
