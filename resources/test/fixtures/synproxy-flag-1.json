@@ -1,0 +1,92 @@
+{
+    "nftables": [
+        {
+            "metainfo": {
+                "version": "1.1.0",
+                "release_name": "some name",
+                "json_schema_version": 1
+            }
+        },
+        {
+            "table": {
+                "family": "ip",
+                "name": "test",
+                "handle": 1
+            }
+        },
+        {
+            "synproxy": {
+                "family": "ip",
+                "name": "syn1",
+                "table": "test",
+                "handle": 4,
+                "mss": 1100,
+                "wscale": 7,
+                "flags": [
+                    "timestamp"
+                ]
+            }
+        },
+        {
+            "synproxy": {
+                "family": "ip",
+                "name": "syn2",
+                "table": "test",
+                "handle": 5,
+                "mss": 1000,
+                "wscale": 6,
+                "flags": [
+                    "timestamp",
+                    "sack-perm"
+                ]
+            }
+        },
+        {
+            "chain": {
+                "family": "ip",
+                "table": "test",
+                "name": "chain1",
+                "handle": 1
+            }
+        },
+        {
+            "rule": {
+                "family": "ip",
+                "table": "test",
+                "chain": "chain1",
+                "handle": 2,
+                "expr": [
+                    {
+                        "synproxy": {
+                            "mss": 1460,
+                            "wscale": 7,
+                            "flags": [
+                                "timestamp",
+                                "sack-perm"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "rule": {
+                "family": "ip",
+                "table": "test",
+                "chain": "chain1",
+                "handle": 3,
+                "expr": [
+                    {
+                        "synproxy": {
+                            "mss": 1500,
+                            "wscale": 5,
+                            "flags": [
+                                "timestamp"
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

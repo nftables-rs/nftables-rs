@@ -1,6 +1,7 @@
 use schemars::JsonSchema;
 use std::{borrow::Cow, collections::HashSet};
 
+use crate::visitor::deserialize_optional_flags;
 use crate::{
     expr::Expression, stmt::Statement, types::*, visitor::single_string_to_option_vec,
     DEFAULT_CHAIN, DEFAULT_FAMILY, DEFAULT_TABLE,
@@ -311,7 +312,11 @@ pub struct Set<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The set’s policy.
     pub policy: Option<SetPolicy>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_optional_flags",
+        default
+    )]
     /// The set’s flags.
     pub flags: Option<HashSet<SetFlag>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -380,7 +385,11 @@ pub struct Map<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The map’s policy.
     pub policy: Option<SetPolicy>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_optional_flags",
+        default
+    )]
     /// The map’s flags.
     pub flags: Option<HashSet<SetFlag>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -483,8 +492,11 @@ pub enum SetPolicy {
     Memory,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, EnumString, Hash, JsonSchema,
+)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 /// Describes a [set](Set)’s flags.
 pub enum SetFlag {
     /// Set content may not change while bound.
@@ -924,7 +936,11 @@ pub struct SynProxy<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The window scale (must match your backend server).
     pub wscale: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_optional_flags",
+        default
+    )]
     /// The synproxy's [flags](crate::types::SynProxyFlag).
     pub flags: Option<HashSet<SynProxyFlag>>,
 }

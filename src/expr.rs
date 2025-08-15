@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::HashSet};
 
 use crate::stmt::{Counter, JumpTarget, Statement};
+use crate::visitor::deserialize_flags;
+use strum_macros::EnumString;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
@@ -300,7 +302,7 @@ pub struct SctpChunk<'a> {
 #[serde(rename = "meta")]
 /// Create a reference to packet meta data.
 ///
-/// See [this page](https://wiki.nftables.org/wiki-nftables/index.php/Matching_packet_metainformation)  
+/// See [this page](https://wiki.nftables.org/wiki-nftables/index.php/Matching_packet_metainformation)
 /// for more information.
 pub struct Meta {
     /// The packet [meta data key](MetaKey).
@@ -589,6 +591,7 @@ impl Default for SymHash {
 pub struct Fib {
     /// The data to be queried by fib lookup.
     pub result: FibResult,
+    #[serde(deserialize_with = "deserialize_flags")]
     /// The tuple of elements ([FibFlags](FibFlag)) that is used as input to the
     /// fib lookup functions.
     pub flags: HashSet<FibFlag>,
@@ -618,8 +621,11 @@ pub enum FibResult {
     Type,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
+#[derive(
+    Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, EnumString, Hash, JsonSchema,
+)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 /// Represents flags for `fib` lookup.
 pub enum FibFlag {
     /// Consider the source address of a packet.

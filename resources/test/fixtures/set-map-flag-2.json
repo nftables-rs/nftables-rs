@@ -1,0 +1,68 @@
+{
+    "nftables": [
+        {
+            "metainfo": {
+                "version": "1.1.0",
+                "release_name": "some name",
+                "json_schema_version": 1
+            }
+        },
+        {
+            "table": {
+                "family": "ip",
+                "name": "test",
+                "handle": 1
+            }
+        },
+        {
+            "set": {
+                "family": "ip",
+                "name": "set1",
+                "table": "test",
+                "type": "inet_service",
+                "handle": 1,
+                "flags": "interval"
+            }
+        },
+        {
+            "set": {
+                "family": "ip",
+                "name": "set2",
+                "table": "test",
+                "type": "inet_service",
+                "handle": 2,
+                "flags": [
+                    "interval",
+                    "timeout"
+                ],
+                "timeout": 10
+            }
+        },
+        {
+            "map": {
+                "family": "ip",
+                "name": "map1",
+                "table": "test",
+                "type": "inet_service",
+                "handle": 3,
+                "map": "inet_service",
+                "flags": "interval"
+            }
+        },
+        {
+            "map": {
+                "family": "ip",
+                "name": "map2",
+                "table": "test",
+                "type": "inet_service",
+                "handle": 4,
+                "map": "inet_service",
+                "flags": [
+                    "interval",
+                    "timeout"
+                ],
+                "timeout": 20
+            }
+        }
+    ]
+}

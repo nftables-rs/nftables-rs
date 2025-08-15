@@ -456,7 +456,10 @@
           {
             "log": {
               "prefix": "Invalid conntrack state: ",
-              "flags": "all"
+              "flags": [
+                "skuid",
+                "ether"
+              ]
             }
           },
           {

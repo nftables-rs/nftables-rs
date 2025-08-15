@@ -78,7 +78,7 @@ table inet filter {
         tcp flags & (fin|syn|rst|psh|ack|urg) == (fin|psh|urg) log prefix "SCANNER4" drop
 
         # if the ctstate is invalid 
-        ct state invalid log flags all prefix "Invalid conntrack state: " counter drop
+        ct state invalid log flags skuid flags ether prefix "Invalid conntrack state: "counter drop
 
         # open ssh, http and https and give them the new state 
         tcp dport { ssh, http, https } ct state new accept

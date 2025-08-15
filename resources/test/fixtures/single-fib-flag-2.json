@@ -1,0 +1,51 @@
+{
+  "nftables": [
+    {
+      "metainfo": {
+        "version": "1.1.0",
+        "release_name": "some name",
+        "json_schema_version": 1
+      }
+    },
+    {
+      "table": {
+        "family": "ip",
+        "name": "test",
+        "handle": 1
+      }
+    },
+    {
+      "chain": {
+        "family": "ip",
+        "table": "test",
+        "name": "prerouting",
+        "handle": 1
+      }
+    },
+    {
+      "rule": {
+        "family": "ip",
+        "table": "test",
+        "chain": "prerouting",
+        "handle": 2,
+        "expr": [
+          {
+            "match": {
+              "op": "==",
+              "left": {
+                "fib": {
+                  "result": "type",
+                  "flags": "daddr"
+                }
+              },
+              "right": "local"
+            }
+          },
+          {
+            "accept": null
+          }
+        ]
+      }
+    }
+  ]
+}

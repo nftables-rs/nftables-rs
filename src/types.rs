@@ -1,5 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumString;
 
 /// Families in nftables.
 ///
@@ -92,13 +93,15 @@ pub enum RejectCode {
     AddrUnreach,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Hash, JsonSchema)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, EnumString, Hash, JsonSchema)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 /// Describes a SynProxy's flags.
 pub enum SynProxyFlag {
     /// Pass client timestamp option to backend.
     Timestamp,
     #[serde(rename = "sack-perm")]
+    #[strum(serialize = "sack-perm")]
     /// Pass client selective acknowledgement option to backend.
     SackPerm,
 }
