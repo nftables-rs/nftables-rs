@@ -89,6 +89,8 @@ pub enum NamedExpression<'a> {
     /// This expression is typically used in the [LHS](crate::stmt::Match::left)
     /// of a [match](crate::stmt::Match) statement.
     Osf(Osf<'a>),
+    /// Enable a counter per element. Available since nftables 0.9.5.
+    Counter(Option<bool>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize, JsonSchema)]
