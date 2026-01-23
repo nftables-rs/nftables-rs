@@ -257,6 +257,7 @@ pub struct Rule<'a> {
     pub table: Cow<'a, str>,
     /// The chain’s name.
     pub chain: Cow<'a, str>,
+    #[serde(default)]
     /// An array of statements this rule consists of.
     ///
     /// In input, it is used in [add](NfCmd::Add)/[insert](NfCmd::Insert)/[replace](NfCmd::Replace) commands only.
