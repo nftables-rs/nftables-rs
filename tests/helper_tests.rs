@@ -4,7 +4,7 @@ use nftables::{
     batch::Batch,
     expr,
     helper::{self, NftablesError},
-    schema::{self, Chain, Rule, Table},
+    schema::{self, Chain, NfListObject, NfObject, Rule, Table},
     stmt, types,
 };
 use serial_test::serial;
@@ -107,6 +107,48 @@ fn test_apply_ruleset() {
     flush_ruleset().expect("failed to flush ruleset");
     let ruleset = example_ruleset(true);
     nftables::helper::apply_ruleset(&ruleset).unwrap();
+}
+
+#[test]
+#[ignore]
+#[serial]
+/// Applies a rule with no expressions and reads it back.
+fn test_empty_rule() {
+    flush_ruleset().expect("failed to flush ruleset");
+    let mut batch = Batch::new();
+    let table_name: &'static str = "test-table-02";
+    let chain_name = "test-chain-02";
+    batch.add(schema::NfListObject::Table(Table {
+        name: table_name.into(),
+        family: types::NfFamily::IP,
+        ..Table::default()
+    }));
+    batch.add(schema::NfListObject::Chain(Chain {
+        name: chain_name.into(),
+        family: types::NfFamily::IP,
+        table: table_name.into(),
+        ..Chain::default()
+    }));
+    batch.add(schema::NfListObject::Rule(Rule {
+        chain: chain_name.into(),
+        family: types::NfFamily::IP,
+        table: table_name.into(),
+        expr: [][..].into(),
+        ..Rule::default()
+    }));
+    // apply ruleset
+    assert!(nftables::helper::apply_ruleset(&batch.to_nftables()).is_ok());
+    // verify that expr of applied rule is empty
+    match helper::get_current_ruleset()
+        .unwrap()
+        .objects
+        .iter()
+        .find(|x| matches!(x, NfObject::ListObject(NfListObject::Rule(_))))
+        .unwrap()
+    {
+        NfObject::ListObject(NfListObject::Rule(e)) => assert_eq!(0, e.expr.len()),
+        _ => panic!("unexpected non-empty rule found"),
+    }
 }
 
 #[test]
