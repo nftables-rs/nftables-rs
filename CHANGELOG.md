@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.4](https://github.com/nftables-rs/nftables-rs/compare/v0.6.3...v0.6.4)
+
+
 ## [0.6.3](https://github.com/nftables-rs/nftables-rs/compare/v0.6.2...v0.6.3)
 
 ### 🐛 Bug Fixes
