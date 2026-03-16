@@ -332,6 +332,12 @@ pub struct Set<'a> {
     /// Garbage collector interval in seconds.
     pub gc_interval: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional set statements.
+    pub stmt: Option<Cow<'a, [Expression<'a>]>>,
+    #[serde(rename = "auto-merge", skip_serializing_if = "Option::is_none")]
+    /// Whether adjacent set elements get automatically merged. This is only valid for interval sets.
+    pub auto_merge: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// Maximum number of elements supported.
     pub size: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -355,6 +361,8 @@ impl Default for Set<'_> {
             elem: None,
             timeout: None,
             gc_interval: None,
+            stmt: None,
+            auto_merge: None,
             size: None,
             comment: None,
         }
