@@ -3,6 +3,7 @@ use nftables::stmt::{self, Counter, Match, Operator, Queue, Statement};
 use nftables::{schema::*, types::*};
 use serde_json::json;
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 #[test]
 fn test_chain_table_rule_inet() {
@@ -392,4 +393,43 @@ fn test_bit_flags() {
 
     let parsed: NfListObject = serde_json::from_value(json).unwrap();
     assert_eq!(expected, parsed);
+}
+
+#[test]
+/// Test that CTTimeout policy round-trips as a multi-state map.
+fn test_ct_timeout_policy() {
+    let mut policy = BTreeMap::new();
+    policy.insert(Cow::Borrowed("replied"), 86400u32);
+    policy.insert(Cow::Borrowed("unreplied"), 480u32);
+
+    let expected = NfListObject::CTTimeout(CTTimeout {
+        family: NfFamily::IP,
+        table: Cow::Borrowed("filter"),
+        name: Cow::Borrowed("my-tcp-timeout"),
+        handle: None,
+        protocol: Some(CTHProto::TCP),
+        policy: Some(policy),
+        l3proto: None,
+    });
+
+    let json = json!({
+        "ct timeout": {
+            "family": "ip",
+            "table": "filter",
+            "name": "my-tcp-timeout",
+            "protocol": "tcp",
+            "policy": {
+                "replied": 86400,
+                "unreplied": 480
+            }
+        }
+    });
+
+    let parsed: NfListObject = serde_json::from_value(json).unwrap();
+    assert_eq!(expected, parsed);
+
+    // also verify the struct serializes back to valid JSON that round-trips
+    let serialized = serde_json::to_value(&expected).unwrap();
+    let reparsed: NfListObject = serde_json::from_value(serialized).unwrap();
+    assert_eq!(expected, reparsed);
 }

@@ -1,5 +1,8 @@
 use schemars::JsonSchema;
-use std::{borrow::Cow, collections::HashSet};
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashSet},
+};
 
 use crate::visitor::deserialize_optional_flags;
 use crate::{
@@ -63,6 +66,7 @@ pub enum NfListObject<'a> {
     #[serde(rename = "metainfo")]
     /// The metainfo object.
     MetainfoObject(MetainfoObject<'a>),
+    #[serde(rename = "ct timeout")]
     /// A conntrack timeout (ct timeout).
     CTTimeout(CTTimeout<'a>),
     #[serde(rename = "ct expectation")]
@@ -856,11 +860,14 @@ pub struct CTTimeout<'a> {
     /// The ct timeout object’s [layer 4 protocol](CTHProto).
     pub protocol: Option<CTHProto>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// The connection state name, e.g. "established", "syn_sent", "close" or "close_wait", for which the timeout value has to be updated.
-    pub state: Option<Cow<'a, str>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// The updated timeout value for the specified connection state.
-    pub value: Option<u32>,
+    /// A map of connection state names to timeout values in seconds.
+    ///
+    /// For example: `{"established": 600, "close_wait": 4}`.
+    ///
+    /// [`BTreeMap`] is used instead of [`std::collections::HashMap`] to guarantee
+    /// deterministic key ordering in serialized JSON output, which makes
+    /// the output stable across runs.
+    pub policy: Option<BTreeMap<Cow<'a, str>, u32>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// The ct timeout object’s layer 3 protocol, e.g. "ip" or "ip6".
     pub l3proto: Option<Cow<'a, str>>,
@@ -875,8 +882,7 @@ impl Default for CTTimeout<'_> {
             name: "mycttimeout".into(),
             handle: None,
             protocol: None,
-            state: None,
-            value: None,
+            policy: None,
             l3proto: None,
         }
     }
