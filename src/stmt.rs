@@ -525,12 +525,12 @@ pub enum Operator {
     /// Not equal (`!=`)
     NEQ,
 
-    #[serde(rename = ">")]
-    /// Less than (`>`)
+    #[serde(rename = "<")]
+    /// Less than (`<`)
     LT,
 
-    #[serde(rename = "<")]
-    /// Greater than (`<`)
+    #[serde(rename = ">")]
+    /// Greater than (`>`)
     GT,
 
     #[serde(rename = "<=")]
