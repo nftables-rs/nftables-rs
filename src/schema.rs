@@ -480,6 +480,9 @@ pub enum SetType {
     #[strum(serialize = "ifname")]
     /// Network interface name (eth0, eth1..).
     Ifname,
+    #[serde(rename = "verdict")]
+    #[strum(serialize = "verdict")]
+    Verdict,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, JsonSchema)]
